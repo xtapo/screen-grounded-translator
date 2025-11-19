@@ -124,7 +124,7 @@ pub struct SettingsApp {
 impl SettingsApp {
     pub fn new(config: Config, app_state: Arc<Mutex<crate::AppState>>, tray_icon: TrayIcon, tray_menu: Menu, ctx: egui::Context) -> Self {
         // Initialize AutoLaunch
-        let app_name = "ScreenTranslator";
+        let app_name = "ScreenGroundedTranslator";
         let app_path = std::env::current_exe().unwrap();
         let args: &[&str] = &[]; // No command line args
         

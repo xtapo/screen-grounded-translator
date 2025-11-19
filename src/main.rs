@@ -41,7 +41,7 @@ lazy_static! {
 fn main() -> eframe::Result<()> {
     // Keep the handle alive for the duration of the program
     let _single_instance_mutex = unsafe {
-        let instance = CreateMutexW(None, true, w!("ScreenTranslatorSingleInstanceMutex"));
+        let instance = CreateMutexW(None, true, w!("ScreenGroundedTranslatorSingleInstanceMutex"));
         if let Ok(handle) = instance {
             if GetLastError() == ERROR_ALREADY_EXISTS {
                 // Another instance is running
@@ -66,7 +66,7 @@ fn main() -> eframe::Result<()> {
     let icon = icon_gen::generate_icon();
     let tray_icon = TrayIconBuilder::new()
         .with_menu(Box::new(tray_menu.clone()))
-        .with_tooltip("Screen Translator (nganlinh4)")
+        .with_tooltip("Screen Grounded Translator (nganlinh4)")
         .with_icon(icon)
         .build()
         .unwrap();
@@ -96,7 +96,7 @@ fn main() -> eframe::Result<()> {
     let initial_config = APP.lock().unwrap().config.clone();
     
     eframe::run_native(
-        "Screen Translator",
+        "Screen Grounded Translator",
         options,
         Box::new(move |cc| {
             gui::configure_fonts(&cc.egui_ctx);
