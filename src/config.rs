@@ -20,14 +20,48 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
+        // Detect system language
+        let ui_language = match sys_locale::get_locale() {
+            Some(locale) => {
+                let lang = locale.to_lowercase();
+                if lang.starts_with("vi") {
+                    UiLanguage::Vietnamese
+                } else if lang.starts_with("ko") {
+                    UiLanguage::Korean
+                } else {
+                    UiLanguage::English
+                }
+            }
+            None => UiLanguage::English,
+        };
+
+        // Detect system dark mode (Windows 10/11)
+        let dark_mode = is_system_dark_mode();
+
         Self {
             api_key: "".to_string(),
             target_language: "Vietnamese".to_string(),
             hotkey_code: 192, // VK_OEM_3 (~)
             hotkey_name: "` / ~".to_string(),
-            dark_mode: true,
-            ui_language: UiLanguage::English,
+            dark_mode,
+            ui_language,
         }
+    }
+}
+
+fn is_system_dark_mode() -> bool {
+    // Check Windows registry for AppsUseLightTheme (0 = dark, 1 = light)
+    use winreg::RegKey;
+    use winreg::enums::HKEY_CURRENT_USER;
+    
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    match hkcu.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize") {
+        Ok(key) => {
+            key.get_value::<u32, _>("AppsUseLightTheme")
+                .map(|val| val == 0)
+                .unwrap_or(true) // Default to dark if can't read
+        }
+        Err(_) => true, // Default to dark
     }
 }
 
