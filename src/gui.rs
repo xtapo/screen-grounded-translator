@@ -162,6 +162,7 @@ impl SettingsApp {
             is_quitting: false,
             run_at_startup,
             auto_launcher: Some(auto),
+            show_api_key: false,
         }
     }
 
@@ -254,10 +255,18 @@ impl eframe::App for SettingsApp {
             ui.group(|ui| {
                 ui.heading(text.api_section);
                 ui.label(text.api_key_label);
-                let response = ui.add(egui::TextEdit::singleline(&mut self.config.api_key).password(true).desired_width(f32::INFINITY));
-                if response.changed() {
-                    self.save_and_sync();
-                }
+                ui.horizontal(|ui| {
+                    let available = ui.available_width() - 32.0;
+                    if ui.add(egui::TextEdit::singleline(&mut self.config.api_key)
+                        .password(!self.show_api_key)
+                        .desired_width(available)).changed() {
+                        self.save_and_sync();
+                    }
+                    let eye_icon = if self.show_api_key { "👁" } else { "🔒" };
+                    if ui.button(eye_icon).on_hover_text(if self.show_api_key { "Hide" } else { "Show" }).clicked() {
+                        self.show_api_key = !self.show_api_key;
+                    }
+                });
                 if ui.link(text.get_key_link).clicked() {
                     let _ = open::that("https://console.groq.com/keys");
                 }

@@ -56,7 +56,7 @@ impl ModelSelector {
 
 /// Set this to `true` to rotate between Scout and Maverick models
 /// Set this to `false` to always use Scout only
-pub const USE_MODEL_ROTATION: bool = true;
+pub const USE_MODEL_ROTATION: bool = false;
 
 /// Available model names for reference
 pub mod models {
