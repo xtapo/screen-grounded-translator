@@ -70,10 +70,25 @@ fn main() -> eframe::Result<()> {
         .build()
         .unwrap();
 
+    let mut viewport_builder = eframe::egui::ViewportBuilder::default()
+        .with_inner_size([400.0, 650.0])
+        .with_resizable(true);
+    
+    // Set window icon - embedded in binary
+    let app_icon_bytes = include_bytes!("../assets/app-icon.png");
+    if let Ok(img) = image::load_from_memory(app_icon_bytes) {
+        let img_rgba = img.to_rgba8();
+        let (width, height) = img_rgba.dimensions();
+        let icon_data = eframe::egui::IconData {
+            rgba: img_rgba.to_vec(),
+            width,
+            height,
+        };
+        viewport_builder = viewport_builder.with_icon(std::sync::Arc::new(icon_data));
+    }
+    
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_inner_size([400.0, 650.0])
-            .with_resizable(true),
+        viewport: viewport_builder,
         ..Default::default()
     };
     
