@@ -1236,16 +1236,49 @@ impl eframe::App for SettingsApp {
                                 });
                                 
                                 ui.add_space(10.0);
+                                ui.separator();
+                                ui.add_space(5.0);
+                                
+                                // Export section
+                                ui.label(egui::RichText::new("Xuất & Chia sẻ").strong());
+                                ui.add_space(5.0);
+                                
                                 ui.horizontal(|ui| {
                                     if ui.button("📋 Copy").clicked() {
                                         ui.output_mut(|o| o.copied_text = entry.result_text.clone());
                                     }
-                                    if ui.button("🗑️ Xóa").clicked() {
-                                        crate::history::delete_entry(&entry.id);
-                                        self.history_entries = crate::history::load_history();
-                                        self.selected_history_id = None;
+                                    if ui.button("📋 Copy (có format)").clicked() {
+                                        let formatted = crate::history::format_for_clipboard(&entry);
+                                        ui.output_mut(|o| o.copied_text = formatted);
                                     }
                                 });
+                                
+                                ui.add_space(5.0);
+                                ui.horizontal(|ui| {
+                                    if ui.button("💾 Xuất TXT").clicked() {
+                                        match crate::history::export_to_txt(&entry) {
+                                            Ok(path) => {
+                                                let _ = open::that(path.parent().unwrap_or(&path));
+                                            }
+                                            Err(_) => {}
+                                        }
+                                    }
+                                    if ui.button("📝 Xuất Markdown").clicked() {
+                                        match crate::history::export_to_markdown(&entry) {
+                                            Ok(path) => {
+                                                let _ = open::that(path.parent().unwrap_or(&path));
+                                            }
+                                            Err(_) => {}
+                                        }
+                                    }
+                                });
+                                
+                                ui.add_space(10.0);
+                                if ui.button("🗑️ Xóa").clicked() {
+                                    crate::history::delete_entry(&entry.id);
+                                    self.history_entries = crate::history::load_history();
+                                    self.selected_history_id = None;
+                                }
                             } else {
                                 // LIST VIEW
                                 ui.label(egui::RichText::new(text.history_title).heading());
