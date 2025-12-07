@@ -764,6 +764,133 @@ impl eframe::App for SettingsApp {
                             // -----------------------------
 
                             ui.add_space(10.0);
+                            
+                            // --- LIVE CAPTIONS SECTION ---
+                            ui.group(|ui| {
+                                ui.horizontal(|ui| {
+                                    draw_icon_static(ui, Icon::Microphone, None);
+                                    ui.label(egui::RichText::new(text.live_captions_title).strong());
+                                    icon_button(ui, Icon::Info).on_hover_text(text.live_captions_tooltip);
+                                });
+                                
+                                // Check for errors
+                                let last_error = crate::live_captions::get_last_error();
+                                if !last_error.is_empty() {
+                                    ui.colored_label(egui::Color32::from_rgb(255, 100, 100), format!("⚠️ {}", last_error));
+                                }
+                                
+                                let is_active = crate::overlay::is_live_captions_active();
+                                
+                                ui.horizontal(|ui| {
+                                    if !is_active {
+                                        if ui.button(text.live_captions_start).clicked() {
+                                            let config = self.config.live_captions.clone();
+                                            crate::overlay::start_live_captions_overlay(config);
+                                        }
+                                        
+                                        // Check button
+                                        if ui.button("🔍 Kiểm tra").on_hover_text("Kiểm tra Live Captions có đang chạy không").clicked() {
+                                            match crate::live_captions::check_live_captions_running() {
+                                                Ok(true) => {
+                                                    log::info!("Live Captions is running");
+                                                }
+                                                Ok(false) | Err(_) => {
+                                                    log::info!("Live Captions not found");
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        if ui.button(text.live_captions_stop).clicked() {
+                                            crate::overlay::stop_live_captions_overlay();
+                                        }
+                                    }
+                                    
+                                    let status_text = if is_active { "🟢 Đang chạy" } else { "⚪ Chưa bật" };
+                                    ui.label(status_text);
+                                });
+                                
+                                // Instructions
+                                if !is_active {
+                                    ui.add_space(3.0);
+                                    ui.horizontal(|ui| {
+                                        ui.label(egui::RichText::new("💡").size(12.0));
+                                        if ui.link("Bật Live Captions thủ công (Win + Ctrl + L)").clicked() {
+                                            // Open Live Captions settings
+                                            let _ = open::that("ms-settings:easeofaccess-livecaptions");
+                                        }
+                                    });
+                                }
+                                
+                                ui.add_space(5.0);
+                                
+                                // Settings (only when not active)
+                                ui.add_enabled_ui(!is_active, |ui| {
+                                    // Target language
+                                    ui.horizontal(|ui| {
+                                        ui.label(text.live_captions_target_lang);
+                                        egui::ComboBox::from_id_source("lc_target_lang")
+                                            .width(150.0)
+                                            .selected_text(&self.config.live_captions.target_language)
+                                            .show_ui(ui, |ui| {
+                                                for lang in get_all_languages().iter() {
+                                                    if ui.selectable_label(self.config.live_captions.target_language == *lang, lang).clicked() {
+                                                        self.config.live_captions.target_language = lang.clone();
+                                                        self.save_and_sync();
+                                                    }
+                                                }
+                                            });
+                                    });
+                                    
+                                    // Translation model
+                                    ui.horizontal(|ui| {
+                                        ui.label(text.live_captions_model);
+                                        let mut models_for_text: Vec<_> = get_all_models()
+                                            .into_iter()
+                                            .filter(|m| m.enabled && m.model_type == crate::model_config::ModelType::Text)
+                                            .collect();
+                                        
+                                        let current_model_display = get_model_by_id(&self.config.live_captions.translation_model)
+                                            .map(|m| m.name_en.clone())
+                                            .unwrap_or_else(|| self.config.live_captions.translation_model.clone());
+                                        
+                                        egui::ComboBox::from_id_source("lc_model")
+                                            .width(180.0)
+                                            .selected_text(current_model_display)
+                                            .show_ui(ui, |ui| {
+                                                for model in models_for_text {
+                                                    if ui.selectable_label(
+                                                        self.config.live_captions.translation_model == model.id,
+                                                        &model.name_en
+                                                    ).clicked() {
+                                                        self.config.live_captions.translation_model = model.id.clone();
+                                                        self.save_and_sync();
+                                                    }
+                                                }
+                                            });
+                                    });
+                                    
+                                    // Overlay sentences
+                                    ui.horizontal(|ui| {
+                                        ui.label(text.live_captions_sentences);
+                                        let mut sentences = self.config.live_captions.overlay_sentences as i32;
+                                        if ui.add(egui::DragValue::new(&mut sentences).clamp_range(1..=5)).changed() {
+                                            self.config.live_captions.overlay_sentences = sentences as usize;
+                                            self.save_and_sync();
+                                        }
+                                    });
+                                    
+                                    // Checkboxes
+                                    if ui.checkbox(&mut self.config.live_captions.show_original, text.live_captions_show_original).changed() {
+                                        self.save_and_sync();
+                                    }
+                                    if ui.checkbox(&mut self.config.live_captions.auto_hide_live_captions, text.live_captions_auto_hide).changed() {
+                                        self.save_and_sync();
+                                    }
+                                });
+                            });
+                            // -----------------------------
+
+                            ui.add_space(10.0);
 
                             ui.horizontal(|ui| {
                                 if let Some(launcher) = &self.auto_launcher {
@@ -978,6 +1105,14 @@ impl eframe::App for SettingsApp {
                                         if ui.checkbox(&mut preset.live_mode, "Chế độ hội thoại (Live)").on_hover_text("Ghi âm và dịch liên tục (Beta)").clicked() {
                                             preset_changed = true;
                                         }
+                                        // Skip Frames toggle (only show when Live Mode is enabled)
+                                        if preset.live_mode {
+                                            if ui.checkbox(&mut preset.skip_frames, "Nhảy cóc (Skip Frames)")
+                                                .on_hover_text("Bỏ qua các đoạn audio cũ để bám sát thời gian thực. Tắt nếu muốn dịch đầy đủ.")
+                                                .clicked() {
+                                                preset_changed = true;
+                                            }
+                                        }
                                     });
                                 });
                             }
@@ -1037,9 +1172,37 @@ impl eframe::App for SettingsApp {
                                                          egui::ComboBox::from_id_source("stream_combo")
                                                              .selected_text(if preset.streaming_enabled { text.streaming_option_stream } else { text.streaming_option_wait })
                                                              .show_ui(ui, |ui| {
-                                                                 if ui.selectable_value(&mut preset.streaming_enabled, false, text.streaming_option_wait).clicked() { preset_changed = true; }
-                                                                 if ui.selectable_value(&mut preset.streaming_enabled, true, text.streaming_option_stream).clicked() { preset_changed = true; }
+                                                             if ui.selectable_value(&mut preset.streaming_enabled, true, text.streaming_option_stream).clicked() { preset_changed = true; }
                                                              });
+                                                     }
+                                                     
+                                                     // NEW: Live Mode for Image/Video (Subtitle Mode)
+                                                     if !is_audio {
+                                                         ui.add_space(5.0);
+                                                         if ui.checkbox(&mut preset.live_mode, "Chế độ Live (Subtitle)").on_hover_text("Dịch liên tục vùng màn hình đã chọn (OCR)").clicked() {
+                                                             preset_changed = true;
+                                                         }
+                                                         // Skip Frames toggle (only show when Live Mode is enabled)
+                                                         if preset.live_mode {
+                                                             if ui.checkbox(&mut preset.skip_frames, "Nhảy cóc (Skip Frames)")
+                                                                 .on_hover_text("Bỏ qua các khung hình cũ để bám sát thời gian thực. Tắt nếu muốn dịch từng frame.")
+                                                                 .clicked() {
+                                                                 preset_changed = true;
+                                                             }
+                                                             // Capture interval slider
+                                                             ui.horizontal(|ui| {
+                                                                 ui.label("Độ trễ chụp:");
+                                                                 let mut interval = preset.capture_interval_ms as i32;
+                                                                 if ui.add(
+                                                                     egui::Slider::new(&mut interval, 50..=1000)
+                                                                         .suffix("ms")
+                                                                         .step_by(50.0)
+                                                                 ).on_hover_text("Khoảng thời gian giữa mỗi lần chụp màn hình. Nhỏ hơn = nhanh hơn nhưng tốn nhiều API hơn.").changed() {
+                                                                     preset.capture_interval_ms = interval as u64;
+                                                                     preset_changed = true;
+                                                                 }
+                                                             });
+                                                         }
                                                      }
                                                     });
 

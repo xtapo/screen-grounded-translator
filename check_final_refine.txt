@@ -26,28 +26,43 @@ warning: unused import: `windows::Win32::Graphics::Gdi::*`
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:28:46
+  --> src\uia.rs:29:54
    |
-28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
-   |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:29:33
-   |
-29 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+29 |                     if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, cond_and) {
+   |                                                      ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:38:47
+  --> src\uia.rs:39:46
    |
-38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
+39 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, cond_and_en) {
+   |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
+
+error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
+  --> src\uia.rs:47:47
+   |
+47 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, cond_and_vi) {
    |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
-error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
-   |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+error[E0277]: the trait bound `IUIAutomationCondition: IntoParam<IUIAutomationCondition, ReferenceType>` is not satisfied
+    --> src\uia.rs:58:67
+     |
+  58 |         let element_array = window.FindAll(TreeScope_Descendants, cond_text)?;
+     |                                    -------                        ^^^^^^^^^ the trait `IntoParam<IUIAutomationCondition, ReferenceType>` is not implemented for `IUIAutomationCondition`
+     |                                    |
+     |                                    required by a bound introduced by this call
+     |
+note: required by a bound in `windows::Win32::UI::Accessibility::IUIAutomationElement::FindAll`
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:8080:13
+     |
+8078 |     pub unsafe fn FindAll<P0>(&self, scope: TreeScope, condition: P0) -> ::windows::core::Result<IUIAutomationElementArray>
+     |                   ------- required by a bound in this associated function
+8079 |     where
+8080 |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `IUIAutomationElement::FindAll`
+help: consider borrowing here
+     |
+  58 |         let element_array = window.FindAll(TreeScope_Descendants, &cond_text)?;
+     |                                                                   +
 
 warning: unused variable: `overlay_hwnd`
    --> src\api.rs:908:5
@@ -139,7 +154,7 @@ warning: unused variable: `error_msg`
 74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0599.
-For more information about an error, try `rustc --explain E0282`.
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
 warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
 error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 4 previous errors; 18 warnings emitted

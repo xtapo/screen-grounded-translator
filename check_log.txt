@@ -1,0 +1,8 @@
+error: failed to select a version for `windows`.
+    ... required by package `xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)`
+versions that meet the requirements `^0.48` (locked to 0.48.0) are: 0.48.0
+
+package `xt-screen-translator` depends on `windows` with feature `Win32_System_Variant` but `windows` does not have that feature.
+
+
+failed to select a version for `windows` which could resolve this conflict

@@ -24,6 +24,13 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
         )
     };
 
+    // Live Mode / Subtitle Mode Check
+    if preset.live_mode {
+        unsafe { PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)); }
+        crate::api::capture_screen_continuous(preset, rect, overlay_hwnd);
+        return;
+    }
+
     let model_id = &preset.model;
     let model_config = crate::model_config::get_model_by_id(model_id);
     let model_config = model_config.expect("Model config not found for preset model");
@@ -691,6 +698,7 @@ pub fn start_live_translation_session(
     let retranslate = preset.retranslate && retranslate_rect.is_some();
     let retranslate_streaming_enabled = preset.retranslate_streaming_enabled;
     let retranslate_to = preset.retranslate_to.clone();
+    let skip_frames = preset.skip_frames; // Frame skipping (queue drain) setting
     let retranslate_model_id = preset.retranslate_model.clone();
 
     // Spawn Window Thread
@@ -724,8 +732,22 @@ pub fn start_live_translation_session(
             let full_translation = Arc::new(Mutex::new(String::new()));
             
             // Loop for chunks
-            while let Ok(wav_data) = rx.recv() {
+            while let Ok(mut wav_data) = rx.recv() {
+                // LATENCY OPTIMIZATION: Drain queue to get the LATEST audio chunk (if skip_frames is enabled)
+                // Skip old audio chunks to stay in sync with real-time
+                if skip_frames {
+                    let mut skipped_count = 0;
+                    while let Ok(next_chunk) = rx.try_recv() {
+                        wav_data = next_chunk;
+                        skipped_count += 1;
+                    }
+                    if skipped_count > 0 {
+                        log::info!("Live Audio: Skipped {} old chunk(s) to stay in sync", skipped_count);
+                    }
+                }
+
                 // 1. Transcribe
+                log::info!("Live Audio: Processing chunk ({} bytes)", wav_data.len());
                 let res: anyhow::Result<String> = if provider == "google" {
                     if gemini_api_key.trim().is_empty() { Err(anyhow::anyhow!("NO_API_KEY")) }
                     else {
@@ -734,7 +756,7 @@ pub fn start_live_translation_session(
                             final_prompt.clone(),
                             model_name.clone(),
                             wav_data,
-                            |chunk| { 
+                            |_chunk| { 
                                 // Intermediate stream update? 
                                 // Hard with accumulation. Maybe just wait for final per chunk?
                                 // Let's simplify: Wait for full chunk result before updating main text
@@ -748,9 +770,27 @@ pub fn start_live_translation_session(
                     }
                 };
 
+                match &res {
+                    Ok(text) => log::info!("Live Audio: Transcription SUCCESS ({} chars)", text.len()),
+                    Err(e) => log::error!("Live Audio: Transcription FAILED - {}", e),
+                }
+
                 if let Ok(text) = res {
                     if !text.trim().is_empty() {
                         let mut full = full_transcript.lock().unwrap();
+                        
+                        // LIMIT TEXT BUFFER to ~1000 chars (approx. 10-15 sentences)
+                        // If buffer is too long, truncate the beginning
+                        if full.len() > 1000 {
+                            // Find the first space after the cut point to keep words intact
+                            if let Some(cut_idx) = full.char_indices().skip(200).find(|(_, c)| c.is_whitespace()).map(|(i, _)| i) {
+                                *full = full[cut_idx+1..].to_string();
+                            } else {
+                                // Fallback if no space found (unlikely)
+                                *full = full.chars().skip(200).collect();
+                            }
+                        }
+
                         if !full.is_empty() { full.push(' '); }
                         full.push_str(&text);
                         let current_full = full.clone();
@@ -787,6 +827,16 @@ pub fn start_live_translation_session(
                                 }
                             ).map(|trans_text| {
                                 let mut full_trans = full_translation.lock().unwrap();
+                                
+                                // Limit Translation Buffer as well
+                                if full_trans.len() > 1000 {
+                                     if let Some(cut_idx) = full_trans.char_indices().skip(200).find(|(_, c)| c.is_whitespace()).map(|(i, _)| i) {
+                                        *full_trans = full_trans[cut_idx+1..].to_string();
+                                     } else {
+                                        *full_trans = full_trans.chars().skip(200).collect();
+                                     }
+                                }
+
                                 if !full_trans.is_empty() { full_trans.push(' '); }
                                 full_trans.push_str(&trans_text);
                                 
@@ -812,4 +862,257 @@ pub fn start_live_translation_session(
     });
 
     LiveSession { tx }
+}
+
+pub struct LiveVisionSession {
+    pub tx: Sender<image::ImageBuffer<image::Rgba<u8>, Vec<u8>>>,
+}
+
+pub fn start_live_vision_session(
+    preset: crate::config::Preset,
+    overlay_hwnd: HWND,
+) -> LiveVisionSession {
+    let (tx, rx) = channel::<image::ImageBuffer<image::Rgba<u8>, Vec<u8>>>();
+
+    let screen_w = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    let screen_h = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+
+    // Determine window positions
+    let (rect, retranslate_rect) = if preset.retranslate {
+        let w = 600;
+        let h = 300;
+        let gap = 20;
+        let total_w = w * 2 + gap;
+        let start_x = (screen_w - total_w) / 2;
+        let y = (screen_h - h) / 2;
+        
+        (
+            RECT { left: start_x, top: y, right: start_x + w, bottom: y + h },
+            Some(RECT { left: start_x + w + gap, top: y, right: start_x + w + gap + w, bottom: y + h })
+        )
+    } else {
+        let w = 700;
+        let h = 300;
+        let x = (screen_w - w) / 2;
+        let y = (screen_h - h) / 2;
+        (RECT { left: x, top: y, right: x + w, bottom: y + h }, None)
+    };
+
+    let model_config = crate::model_config::get_model_by_id(&preset.model).expect("Model not found");
+    let model_name = model_config.full_name;
+    let provider = model_config.provider;
+
+    let (groq_api_key, gemini_api_key, ui_language) = {
+        let app = crate::APP.lock().unwrap();
+        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.ui_language.clone())
+    };
+
+    let mut final_prompt = preset.prompt.clone();
+    for (key, value) in &preset.language_vars {
+        let pattern = format!("{{{}}}", key);
+        final_prompt = final_prompt.replace(&pattern, value);
+    }
+    final_prompt = final_prompt.replace("{language}", &preset.selected_language);
+    // STRICT INSTRUCTION for Live Mode
+    final_prompt.push_str("\n\nIf the image does not contain any text, output EXACTLY '[NO_TEXT]' and nothing else.");
+
+    let streaming_enabled = preset.streaming_enabled;
+    let hide_overlay = preset.hide_overlay;
+    let _retranslate = preset.retranslate && retranslate_rect.is_some(); // retranslate flag
+    let retranslate_streaming_enabled = preset.retranslate_streaming_enabled;
+    let retranslate_to = preset.retranslate_to.clone();
+    let skip_frames = preset.skip_frames; // Frame skipping (queue drain) setting
+    let retranslate_model_id = preset.retranslate_model.clone();
+
+    // Spawn Window Thread
+    std::thread::spawn(move || {
+        let primary_hwnd = create_result_window(rect, WindowType::Primary);
+        
+        // In Live Mode (Vision), we keep the overlay (if it's the selection overlay, strictly speaking it closes after selection?)
+        // Actually, for Vision, the overlay provided is likely the SELECTION overlay which closes after selection.
+        // But we want to indicate "Live Mode Active". 
+        // We will manage the capture loop externally. 
+        // Here we just manage the result window.
+
+        if !hide_overlay {
+            unsafe { ShowWindow(primary_hwnd, SW_SHOW); }
+            update_window_text(primary_hwnd, "Đang khởi tạo chế độ Live Subtitle...");
+        }
+
+        let secondary_hwnd = if preset.retranslate && retranslate_rect.is_some() {
+            let rect_sec = retranslate_rect.unwrap();
+            let sec_hwnd = create_result_window(rect_sec, WindowType::SecondaryExplicit);
+            link_windows(primary_hwnd, sec_hwnd);
+            if !hide_overlay {
+                unsafe { ShowWindow(sec_hwnd, SW_SHOW); }
+                update_window_text(sec_hwnd, "...");
+            }
+            Some(sec_hwnd)
+        } else {
+            None
+        };
+
+        // Spawn Processor Thread
+        std::thread::spawn(move || {
+            let full_transcript = Arc::new(Mutex::new(String::new()));
+            let full_translation = Arc::new(Mutex::new(String::new()));
+            
+            let mut last_processed_text = String::new();
+
+            // Loop for images
+            while let Ok(mut img) = rx.recv() {
+                // LATENCY OPTIMIZATION: Drain the channel to get the LATEST image (if skip_frames is enabled).
+                // If processing took 1s, and capture is 0.2s, we have 4-5 images queued.
+                // We should skip them and only process the newest one.
+                if skip_frames {
+                    while let Ok(next_img) = rx.try_recv() {
+                        img = next_img;
+                    }
+                }
+
+                // 1. Vision Translation
+                let res: anyhow::Result<String> = translate_image_streaming(
+                    &groq_api_key,
+                    &gemini_api_key,
+                    final_prompt.clone(),
+                    model_name.clone(),
+                    provider.clone(),
+                    img,
+                    streaming_enabled, 
+                    false, // json format? assume no for general
+                    |chunk| { 
+                        // Intermediate logging?
+                    }
+                );
+
+                if let Ok(text) = res {
+                    let text_clean = text.trim();
+                    if !text_clean.is_empty() {
+                        // FILTER: Ignore "No Text" messages from AI
+                        let lower = text_clean.to_lowercase();
+                        if lower.contains("no text") 
+                            || lower.contains("cannot see") 
+                            || lower.contains("cannot read")
+                            || lower.contains("doesn't contain text")
+                            || lower.contains("image does not contain")
+                            || lower.contains("[no_text]") { // Check for the strict token
+                            continue;
+                        }
+
+                        // FILTER: Deduplicate (Historical Check)
+                        // Normalize: Lowercase + Alphanumeric only
+                        let normalize = |s: &str| -> String {
+                            s.chars().filter(|c| c.is_alphanumeric()).collect::<String>().to_lowercase()
+                        };
+                        
+                        let norm_current = normalize(text_clean);
+                        let mut is_dup = false;
+
+                        // Check against last raw processed
+                        if normalize(&last_processed_text) == norm_current {
+                            is_dup = true;
+                        }
+
+                        // Check against current display buffer (max 2 lines)
+                        if !is_dup {
+                             let history_lock = full_transcript.lock().unwrap();
+                             let lines: Vec<&str> = history_lock.split('\n').collect();
+                             for line in lines {
+                                 if normalize(line) == norm_current {
+                                     is_dup = true;
+                                     break;
+                                 }
+                             }
+                        }
+
+                        if is_dup { continue; }
+                        
+                        // Update last processed
+                        last_processed_text = text_clean.to_string();
+
+                        // --- UPDATE TRANSCRIPT HISTORY (Max 2 lines) ---
+                        let mut full_history_str = full_transcript.lock().unwrap();
+                        let mut lines: Vec<&str> = full_history_str.split('\n').filter(|s| !s.trim().is_empty()).collect();
+                        
+                        let current_line = text_clean.to_string();
+                        lines.push(&current_line);
+                        
+                        // Keep only last 2
+                        if lines.len() > 2 {
+                            lines.remove(0);
+                        }
+                        
+                        let new_full_str = lines.join("\n");
+                        *full_history_str = new_full_str.clone();
+
+                        // Update Primary
+                        if !hide_overlay {
+                            update_window_text(primary_hwnd, &new_full_str);
+                        }
+
+                        // 2. Retranslate (Chunk-based)
+                        if let Some(sec_hwnd) = secondary_hwnd {
+                            let text_to_trans = text_clean.to_string();
+                            
+                            let tm_config = crate::model_config::get_model_by_id(&retranslate_model_id);
+                            let (tm_name, tm_provider) = match tm_config {
+                                Some(m) => (m.full_name, m.provider.clone()),
+                                None => ("openai/gpt-oss-20b".to_string(), "groq".to_string())
+                            };
+                            
+                            let _ = translate_text_streaming(
+                                &groq_api_key,
+                                &gemini_api_key,
+                                text_to_trans,
+                                retranslate_to.clone(),
+                                tm_name,
+                                tm_provider,
+                                retranslate_streaming_enabled,
+                                false,
+                                |chunk| {}
+                            ).map(|trans_text| {
+                                let mut full_trans_str = full_translation.lock().unwrap();
+                                let mut trans_lines: Vec<&str> = full_trans_str.split('\n').filter(|s| !s.trim().is_empty()).collect();
+                                
+                                // Logic: We want to match the transcript structure. 
+                                // Since transcript added 1 line, we append 1 translated line.
+                                // But translation is streaming/async.
+                                // Simplified approach: Just append to history and trim independently?
+                                // Better: Treating this entire block as processing "one transcript line".
+                                
+                                // Wait, we can't easily sync streaming chunks to a clean "line list" if we stream.
+                                // BUT the request here calls `translate_text_streaming`... let's assume it returns whole text at end of map.
+                                
+                                let current_trans_line = trans_text.trim().to_string();
+                                trans_lines.push(&current_trans_line);
+                                
+                                if trans_lines.len() > 2 {
+                                    trans_lines.remove(0);
+                                }
+                                
+                                let new_trans_str = trans_lines.join("\n");
+                                *full_trans_str = new_trans_str.clone();
+                                
+                                if !hide_overlay {
+                                    update_window_text(sec_hwnd, &new_trans_str);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+
+        // Message Loop
+        unsafe {
+            let mut msg = MSG::default();
+            while GetMessageW(&mut msg, None, 0, 0).into() {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+                if !IsWindow(primary_hwnd).as_bool() { break; }
+            }
+        }
+    });
+
+    LiveVisionSession { tx }
 }

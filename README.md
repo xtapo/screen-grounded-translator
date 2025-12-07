@@ -96,6 +96,58 @@ For higher quality results, XST can chain models:
 * `Accurate` (Kimi k2-instruct) - High quality Chinese/English handling.
 * `Gemini Text` (Flash Lite / Flash / 2.5 Pro) - Google's text capabilities.
 
+## Live Mode (Real-time Translation)
+
+XST supports **continuous real-time translation** for both audio and on-screen subtitles.
+
+### Live Audio Mode (Transcribe Speech)
+
+For meetings, podcasts, or any continuous audio source:
+
+1. **Enable Live Mode:**
+   - Select an **Audio** preset (e.g., "Transcribe speech").
+   - Check **"Chế độ hội thoại (Live)"** in the settings.
+2. **Start Recording:**
+   - Press the hotkey. The Recording Overlay appears.
+   - Audio is processed in **2-second chunks** for fast response.
+3. **During Session:**
+   - Transcription appears in the Result Window, appended in real-time.
+   - Uses **queue draining** to skip old audio if processing is slow, ensuring sync.
+4. **Stop:**
+   - Press the **Stop button** on the Recording Overlay.
+
+### Live Vision/OCR Mode (Subtitle Translation)
+
+For translating on-screen subtitles (movies, games, webinars):
+
+1. **Enable Live Mode:**
+   - Select an **Image** preset (e.g., "Translate text").
+   - Check **"Chế độ Live (Subtitle)"** in the settings.
+2. **Start Capture:**
+   - Press the hotkey.
+   - **Select the subtitle region** on your screen (drag and release).
+3. **During Session:**
+   - The app captures the region every **200ms**.
+   - Only **new/changed images** are sent to AI (image deduplication).
+   - **Duplicate subtitles are filtered** using fuzzy matching.
+   - Result Window shows the **last 2 lines** of translated subtitles.
+4. **Stop:**
+   - Press the **SAME hotkey** again to stop the capture loop.
+
+### Recommended Prompts for Live Mode
+
+**Live Vision (Translate Subtitles):**
+```text
+Translate the text in the image to Vietnamese. Only output the translated text.
+If the image does not contain any text, output EXACTLY '[NO_TEXT]'.
+```
+
+**Live Vision (OCR Only - use with Retranslation):**
+```text
+Extract text from the image. Only output the extracted text.
+If the image does not contain any text, output EXACTLY '[NO_TEXT]'.
+```
+
 ## Troubleshooting
 
 **Hotkey conflict / Not working:**

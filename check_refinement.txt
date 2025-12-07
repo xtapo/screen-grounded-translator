@@ -1,4 +1,37 @@
    Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+error[E0425]: cannot find value `hwnd` in this scope
+     --> src\overlay\recording.rs:61:22
+      |
+   61 |                      hwnd, 
+      |                      ^^^^ help: a tuple struct with a similar name exists: `HWND`
+      |
+     ::: C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\Foundation\mod.rs:21003:1
+      |
+21003 | pub struct HWND(pub isize);
+      | --------------- similarly named tuple struct `HWND` defined here
+
+error[E0425]: cannot find value `hwnd` in this scope
+     --> src\overlay\recording.rs:70:21
+      |
+   70 |                     hwnd
+      |                     ^^^^ help: a tuple struct with a similar name exists: `HWND`
+      |
+     ::: C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\Foundation\mod.rs:21003:1
+      |
+21003 | pub struct HWND(pub isize);
+      | --------------- similarly named tuple struct `HWND` defined here
+
+error[E0425]: cannot find value `hwnd` in this scope
+     --> src\overlay\recording.rs:78:21
+      |
+   78 |                     hwnd
+      |                     ^^^^ help: a tuple struct with a similar name exists: `HWND`
+      |
+     ::: C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\Foundation\mod.rs:21003:1
+      |
+21003 | pub struct HWND(pub isize);
+      | --------------- similarly named tuple struct `HWND` defined here
+
 warning: unused import: `Mutex`
  --> src\api.rs:6:22
   |
@@ -6,6 +39,12 @@ warning: unused import: `Mutex`
   |                      ^^^^^
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `windows::Win32::System::LibraryLoader::*`
+ --> src\overlay\recording.rs:4:5
+  |
+4 | use windows::Win32::System::LibraryLoader::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `windows::Win32::Foundation::*`
  --> src\capture.rs:2:5
@@ -26,28 +65,40 @@ warning: unused import: `windows::Win32::Graphics::Gdi::*`
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:28:46
+  --> src\uia.rs:29:54
    |
-28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
+29 |                     if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and) {
+   |                                                      ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
+
+error[E0282]: type annotations needed
+  --> src\uia.rs:30:44
+   |
+30 |                         if let Ok(_name) = app_window.CurrentName() {
+   |                                            ^^^^^^^^^^ cannot infer type
+
+error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
+  --> src\uia.rs:41:46
+   |
+41 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
    |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
 error[E0282]: type annotations needed
-  --> src\uia.rs:29:33
+  --> src\uia.rs:42:37
    |
-29 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+42 |                  if let Ok(_name) = app_window.CurrentName() {
+   |                                     ^^^^^^^^^^ cannot infer type
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:38:47
+  --> src\uia.rs:51:47
    |
-38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
+51 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
    |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
 error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
+  --> src\uia.rs:52:37
    |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+52 |                  if let Ok(_name) = app_window.CurrentName() {
+   |                                     ^^^^^^^^^^ cannot infer type
 
 warning: unused variable: `overlay_hwnd`
    --> src\api.rs:908:5
@@ -139,7 +190,7 @@ warning: unused variable: `error_msg`
 74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0599.
+Some errors have detailed explanations: E0282, E0425, E0599.
 For more information about an error, try `rustc --explain E0282`.
-warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 4 previous errors; 18 warnings emitted
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 19 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 9 previous errors; 19 warnings emitted

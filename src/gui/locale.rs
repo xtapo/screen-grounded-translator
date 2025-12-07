@@ -55,6 +55,16 @@ pub struct LocaleText {
      pub history_favorites: &'static str,
      pub history_clear_all: &'static str,
      pub history_empty: &'static str,
+     // Live Captions
+     pub live_captions_title: &'static str,
+     pub live_captions_tooltip: &'static str,
+     pub live_captions_start: &'static str,
+     pub live_captions_stop: &'static str,
+     pub live_captions_target_lang: &'static str,
+     pub live_captions_model: &'static str,
+     pub live_captions_sentences: &'static str,
+     pub live_captions_show_original: &'static str,
+     pub live_captions_auto_hide: &'static str,
      }
 
 impl LocaleText {
@@ -114,6 +124,16 @@ impl LocaleText {
                 history_favorites: "Yêu thích",
                 history_clear_all: "Xóa tất cả",
                 history_empty: "Chưa có lịch sử",
+                // Live Captions
+                live_captions_title: "Live Captions (Dịch giọng nói)",
+                live_captions_tooltip: "Dịch thời gian thực từ Windows Live Captions (Win11 22H2+)",
+                live_captions_start: "▶ Bắt đầu",
+                live_captions_stop: "⏹ Dừng lại",
+                live_captions_target_lang: "Ngôn ngữ đích:",
+                live_captions_model: "Mô hình dịch:",
+                live_captions_sentences: "Số câu hiển thị:",
+                live_captions_show_original: "Hiển thị gốc",
+                live_captions_auto_hide: "Tự ẩn Live Captions",
                 },
             "ko" => Self {
                 api_section: "전역 설정",
@@ -169,6 +189,16 @@ impl LocaleText {
                 history_favorites: "즐겨찾기",
                 history_clear_all: "전체 삭제",
                 history_empty: "기록이 없습니다",
+                // Live Captions
+                live_captions_title: "Live Captions (음성 번역)",
+                live_captions_tooltip: "Windows Live Captions를 통한 실시간 번역 (Win11 22H2+)",
+                live_captions_start: "▶ 시작",
+                live_captions_stop: "⏹ 정지",
+                live_captions_target_lang: "대상 언어:",
+                live_captions_model: "번역 모델:",
+                live_captions_sentences: "표시할 문장 수:",
+                live_captions_show_original: "원문 표시",
+                live_captions_auto_hide: "Live Captions 자동 숨기기",
                 },
             _ => Self {
                 api_section: "Global Settings",
@@ -224,6 +254,16 @@ impl LocaleText {
                 history_favorites: "Favorites",
                 history_clear_all: "Clear All",
                 history_empty: "No history yet",
+                // Live Captions
+                live_captions_title: "Live Captions (Speech Translation)",
+                live_captions_tooltip: "Real-time translation via Windows Live Captions (Win11 22H2+)",
+                live_captions_start: "▶ Start",
+                live_captions_stop: "⏹ Stop",
+                live_captions_target_lang: "Target Language:",
+                live_captions_model: "Translation Model:",
+                live_captions_sentences: "Lines to display:",
+                live_captions_show_original: "Show Original",
+                live_captions_auto_hide: "Auto-hide Live Captions",
                 },
                 }
                 }

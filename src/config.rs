@@ -38,6 +38,10 @@ pub struct Preset {
     pub hide_recording_ui: bool,
     #[serde(default)]
     pub live_mode: bool, // "Chế độ hội thoại"
+    #[serde(default = "default_skip_frames")]
+    pub skip_frames: bool, // "Nhảy cóc" - skip old frames in queue
+    #[serde(default = "default_capture_interval")]
+    pub capture_interval_ms: u64, // Capture interval in milliseconds for Live Mode
 
     // --- Video Fields ---
     #[serde(default)]
@@ -49,6 +53,8 @@ pub struct Preset {
 
 fn default_preset_type() -> String { "image".to_string() }
 fn default_audio_source() -> String { "mic".to_string() }
+fn default_skip_frames() -> bool { true } // Enabled by default for faster response
+fn default_capture_interval() -> u64 { 200 } // 200ms default capture interval
 
 impl Default for Preset {
     fn default() -> Self {
@@ -72,8 +78,34 @@ impl Default for Preset {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+        }
+    }
+}
+
+/// Configuration for Live Captions integration
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LiveCaptionsConfig {
+    pub enabled: bool,
+    pub target_language: String,
+    pub translation_model: String,
+    pub overlay_sentences: usize,
+    pub show_original: bool,
+    pub auto_hide_live_captions: bool,
+}
+
+impl Default for LiveCaptionsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            target_language: "Vietnamese".to_string(),
+            translation_model: "fast_text".to_string(),
+            overlay_sentences: 2,
+            show_original: true,
+            auto_hide_live_captions: true,
         }
     }
 }
@@ -86,6 +118,8 @@ pub struct Config {
     pub active_preset_idx: usize, // For UI selection
     pub dark_mode: bool,
     pub ui_language: String,
+    #[serde(default)]
+    pub live_captions: LiveCaptionsConfig,
 }
 
     impl Default for Config {
@@ -116,6 +150,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -144,6 +180,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -169,6 +207,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -194,6 +234,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -222,6 +264,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -250,6 +294,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -275,6 +321,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -300,6 +348,8 @@ pub struct Config {
             audio_source: "device".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -325,6 +375,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -353,6 +405,8 @@ pub struct Config {
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -380,6 +434,8 @@ pub struct Config {
             video_capture_method: "region".to_string(),
             is_upcoming: true, // Mark as upcoming to gray out in sidebar
             live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
         };
 
         Self {
@@ -393,6 +449,7 @@ pub struct Config {
             active_preset_idx: 0,
             dark_mode: true,
             ui_language: "vi".to_string(),
+            live_captions: LiveCaptionsConfig::default(),
         }
     }
 }

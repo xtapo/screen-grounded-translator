@@ -28,26 +28,26 @@ warning: unused import: `windows::Win32::Graphics::Gdi::*`
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
   --> src\uia.rs:28:46
    |
-28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
+28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, cond_and_en) {
    |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
 error[E0282]: type annotations needed
-  --> src\uia.rs:29:33
+  --> src\uia.rs:29:21
    |
-29 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+29 |                  if app_window.CurrentName().is_ok() {
+   |                     ^^^^^^^^^^ cannot infer type
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
   --> src\uia.rs:38:47
    |
-38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
+38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, cond_and_vi) {
    |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
 
 error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
+  --> src\uia.rs:39:21
    |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
+39 |                  if app_window.CurrentName().is_ok() {
+   |                     ^^^^^^^^^^ cannot infer type
 
 warning: unused variable: `overlay_hwnd`
    --> src\api.rs:908:5

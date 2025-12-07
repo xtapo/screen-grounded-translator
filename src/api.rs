@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use image::{ImageBuffer, Rgba};
 use base64::{Engine as _, engine::general_purpose};
 use std::io::{Cursor, BufRead, BufReader};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc};
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc};
+use image::GenericImageView;
 use windows::Win32::Foundation::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -46,6 +47,9 @@ lazy_static::lazy_static! {
         .timeout_read(std::time::Duration::from_secs(30))
         .timeout_write(std::time::Duration::from_secs(30))
         .build();
+
+    pub static ref VISION_STOP_SIGNAL: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    pub static ref VISION_ACTIVE: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 }
 
 pub fn translate_image_streaming<F>(
@@ -824,7 +828,7 @@ pub fn record_audio_continuous(
     stream.play().expect("Failed to start audio stream");
 
     let mut collected_samples: Vec<f32> = Vec::new();
-    let chunk_duration_samples = (sample_rate as usize) * 5; // 5 seconds chunks
+    let chunk_duration_samples = (sample_rate as usize) * 2; // 2 seconds chunks (faster response)
 
     while !stop_signal.load(Ordering::SeqCst) {
         // Drain incoming audio to buffer
@@ -896,6 +900,102 @@ pub fn record_audio_continuous(
              PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
         }
     }
+}
+
+pub fn capture_screen_continuous(
+    preset: crate::config::Preset,
+    rect: RECT, // The selection region
+    overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
+    // Actually, session creates result window.
+    // The `overlay_hwnd` passed to process_and_close is the SELECtION overlay.
+    // We should probably close selection overlay immediately?
+    // capture_screen_continuous needs to know where to send images.
+) {
+    // 1. Setup Session
+    // We need a dummy HWND or handle for session?
+    // start_live_vision_session takes overlay_hwnd mainly to close it (if it's recording overlay).
+    // Here we can pass HWND(0) if we handle closing separately.
+    let session = crate::overlay::process::start_live_vision_session(preset.clone(), HWND(0)); 
+
+    // 2. State
+    VISION_ACTIVE.store(true, Ordering::SeqCst);
+    VISION_STOP_SIGNAL.store(false, Ordering::SeqCst);
+
+    let x_virt = unsafe { GetSystemMetrics(SM_XVIRTUALSCREEN) };
+    let y_virt = unsafe { GetSystemMetrics(SM_YVIRTUALSCREEN) };
+    let crop_x = (rect.left - x_virt).max(0) as u32;
+    let crop_y = (rect.top - y_virt).max(0) as u32;
+    let crop_w = (rect.right - rect.left).abs() as u32;
+    let crop_h = (rect.bottom - rect.top).abs() as u32;
+
+    log::info!("Starting Live Vision Loop. Region: {}x{} at {},{}", crop_w, crop_h, crop_x, crop_y);
+
+    let mut last_processed_image: Option<image::ImageBuffer<image::Rgba<u8>, Vec<u8>>> = None;
+    
+    // ADAPTIVE POLLING: Start with base interval, speed up on change, slow down when static
+    let min_interval = 50u64; // Fastest possible (50ms)
+    let max_interval = preset.capture_interval_ms.max(200); // Use user setting as slow interval
+    let mut current_interval = preset.capture_interval_ms;
+    let mut static_streak = 0u32; // How many consecutive frames were static
+
+    loop {
+        if VISION_STOP_SIGNAL.load(Ordering::SeqCst) {
+            break;
+        }
+
+        // Capture
+        if let Ok(img) = crate::capture::capture_full_screen() {
+             let img_w = img.width();
+             let img_h = img.height();
+             let valid_w = crop_w.min(img_w.saturating_sub(crop_x));
+             let valid_h = crop_h.min(img_h.saturating_sub(crop_y));
+
+             if valid_w > 0 && valid_h > 0 {
+                 let cropped = img.view(crop_x, crop_y, valid_w, valid_h).to_image();
+                 
+                 // IMAGE DIFF CHECK
+                 let is_duplicate = if let Some(last) = &last_processed_image {
+                     *last == cropped
+                 } else {
+                     false
+                 };
+
+                 if !is_duplicate {
+                     // CHANGE DETECTED! Speed up polling
+                     current_interval = min_interval;
+                     static_streak = 0;
+                     
+                     // Store last (original size for comparison)
+                     last_processed_image = Some(cropped.clone());
+                     
+                     // RESIZE for faster API processing
+                     let resized = if cropped.width() > 800 {
+                         let ratio = 800.0 / cropped.width() as f32;
+                         let new_h = (cropped.height() as f32 * ratio) as u32;
+                         image::imageops::resize(&cropped, 800, new_h, image::imageops::FilterType::Triangle)
+                     } else {
+                         cropped
+                     };
+                     
+                     // Send to session
+                     let _ = session.tx.send(resized);
+                 } else {
+                     // NO CHANGE - gradually slow down polling to save resources
+                     static_streak += 1;
+                     if static_streak > 3 {
+                         // Slowly increase interval back to max
+                         current_interval = (current_interval + 25).min(max_interval);
+                     }
+                 }
+             }
+        }
+
+        // Use adaptive interval
+        std::thread::sleep(std::time::Duration::from_millis(current_interval));
+    }
+
+    VISION_ACTIVE.store(false, Ordering::SeqCst);
+    log::info!("Live Vision Loop Ended");
 }
 
 pub fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) -> anyhow::Result<String> {

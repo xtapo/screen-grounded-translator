@@ -13,41 +13,11 @@ warning: unused import: `windows::Win32::Foundation::*`
 2 | use windows::Win32::Foundation::*;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: unused import: `windows::Win32::Foundation::*`
- --> src\uia.rs:3:5
-  |
-3 | use windows::Win32::Foundation::*;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 warning: unused import: `windows::Win32::Graphics::Gdi::*`
-  --> src\main.rs:19:5
+  --> src\main.rs:18:5
    |
-19 | use windows::Win32::Graphics::Gdi::*;
+18 | use windows::Win32::Graphics::Gdi::*;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:28:46
-   |
-28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
-   |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:29:33
-   |
-29 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
-
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:38:47
-   |
-38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
-   |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
-   |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
 
 warning: unused variable: `overlay_hwnd`
    --> src\api.rs:908:5
@@ -104,15 +74,15 @@ warning: unused variable: `streaming_enabled`
     |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
 
 warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1049:34
-     |
-1049 | ...                   |chunk| {}
-     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+   --> src\overlay\process.rs:995:34
+    |
+995 | ...                   |chunk| {}
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
 
 warning: unused variable: `chunk`
-   --> src\overlay\process.rs:960:22
+   --> src\overlay\process.rs:949:22
     |
-960 |                     |chunk| { 
+949 |                     |chunk| { 
     |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
 
 warning: unused variable: `overlay_hwnd`
@@ -127,19 +97,35 @@ warning: unused variable: `ui_language`
 885 |     let (groq_api_key, gemini_api_key, ui_language) = {
     |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
 
-warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1215:26
-     |
-1215 |                         |chunk| {}
-     |                          ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
 warning: unused variable: `error_msg`
-  --> src\main.rs:74:13
+  --> src\main.rs:73:13
    |
-74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+73 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0599.
-For more information about an error, try `rustc --explain E0282`.
-warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 4 previous errors; 18 warnings emitted
+warning: struct `GdiObj` is never constructed
+  --> src\overlay\result\paint.rs:10:8
+   |
+10 | struct GdiObj(HGDIOBJ);
+   |        ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated functions `from_hpen` and `from_hbrush` are never used
+  --> src\overlay\result\paint.rs:12:8
+   |
+11 | impl GdiObj {
+   | ----------- associated functions in this implementation
+12 |     fn from_hpen(pen: HPEN) -> Self { GdiObj(HGDIOBJ(pen.0)) }
+   |        ^^^^^^^^^
+13 |     fn from_hbrush(brush: HBRUSH) -> Self { GdiObj(HGDIOBJ(brush.0)) }
+   |        ^^^^^^^^^^^
+
+warning: function `show_audio_result` is never used
+   --> src\overlay\process.rs:287:8
+    |
+287 | pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT, retrans_rect: Option<RECT>) {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 19 warnings (run `cargo fix --bin "xt-screen-translator" -p xt-screen-translator` to apply 16 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.43s

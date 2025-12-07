@@ -31,33 +31,43 @@ warning: unused import: `windows::Win32::Graphics::Gdi::*`
 19 | use windows::Win32::Graphics::Gdi::*;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:25:40
+error[E0308]: mismatched types
+    --> src\uia.rs:25:91
      |
-  25 | ...   let cond_window = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_WindowControlTypeId.0 as i...
-     |                                  ^^^^^^^^^^^^^^^^^^^^^^^
+  25 | ...= self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_WindowControlTypeId.0 as i32))?;
+     |               -----------------------                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `VARIANT`, found `&VARIANT`
+     |               |
+     |               arguments to this method are incorrect
      |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
+note: method defined here
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4879:19
      |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
+4879 |     pub unsafe fn CreatePropertyCondition(&self, propertyid: UIA_PROPERTY_ID, value: super::super::System::Com::VARIANT) -> ::wind...
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+help: consider removing the borrow
+     |
+  25 -             let cond_window = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_WindowControlTypeId.0 as i32))?;
+  25 +             let cond_window = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, to_variant_i32(UIA_WindowControlTypeId.0 as i32))?;
+     |
 
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:28:41
+error[E0308]: mismatched types
+    --> src\uia.rs:28:85
      |
   28 |             let cond_name_en = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Live Captions"))?;
-     |                                         ^^^^^^^^^^^^^^^^^^^^^^^
+     |                                         -----------------------                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `VARIANT`, found `&VARIANT`
+     |                                         |
+     |                                         arguments to this method are incorrect
      |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
+note: method defined here
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4879:19
      |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
+4879 |     pub unsafe fn CreatePropertyCondition(&self, propertyid: UIA_PROPERTY_ID, value: super::super::System::Com::VARIANT) -> ::wind...
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+help: consider removing the borrow
+     |
+  28 -             let cond_name_en = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Live Captions"))?;
+  28 +             let cond_name_en = self.uia.CreatePropertyCondition(UIA_NamePropertyId, to_variant_bstr("Live Captions"))?;
+     |
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
   --> src\uia.rs:31:46
@@ -71,19 +81,24 @@ error[E0282]: type annotations needed
 39 |                  if let Ok(_) = app_window.CurrentName() {
    |                                 ^^^^^^^^^^ cannot infer type
 
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:45:41
+error[E0308]: mismatched types
+    --> src\uia.rs:45:85
      |
   45 |             let cond_name_vi = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Phß╗Ñ ─æß╗ü trß╗▒c tiß║┐p"))?;
-     |                                         ^^^^^^^^^^^^^^^^^^^^^^^
+     |                                         -----------------------                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `VARIANT`, found `&VARIANT`
+     |                                         |
+     |                                         arguments to this method are incorrect
      |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
+note: method defined here
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4879:19
      |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
+4879 |     pub unsafe fn CreatePropertyCondition(&self, propertyid: UIA_PROPERTY_ID, value: super::super::System::Com::VARIANT) -> ::wind...
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+help: consider removing the borrow
+     |
+  45 -             let cond_name_vi = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Phß╗Ñ ─æß╗ü trß╗▒c tiß║┐p"))?;
+  45 +             let cond_name_vi = self.uia.CreatePropertyCondition(UIA_NamePropertyId, to_variant_bstr("Phß╗Ñ ─æß╗ü trß╗▒c tiß║┐p"))?;
+     |
 
 error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
   --> src\uia.rs:48:47
@@ -97,19 +112,46 @@ error[E0282]: type annotations needed
 49 |                  if let Ok(_) = app_window.CurrentName() {
    |                                 ^^^^^^^^^^ cannot infer type
 
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:60:34
+error[E0308]: mismatched types
+    --> src\uia.rs:60:85
      |
-  60 | ...   let cond_text = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_TextControlTypeId.0 as i32))?;
-     |                                ^^^^^^^^^^^^^^^^^^^^^^^
+  60 | ...= self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_TextControlTypeId.0 as i32))?;
+     |               -----------------------                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `VARIANT`, found `&VARIANT`
+     |               |
+     |               arguments to this method are incorrect
      |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
+note: method defined here
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4879:19
      |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
+4879 |     pub unsafe fn CreatePropertyCondition(&self, propertyid: UIA_PROPERTY_ID, value: super::super::System::Com::VARIANT) -> ::wind...
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+help: consider removing the borrow
+     |
+  60 -         let cond_text = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_TextControlTypeId.0 as i32))?;
+  60 +         let cond_text = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, to_variant_i32(UIA_TextControlTypeId.0 as i32))?;
+     |
+
+error[E0609]: no field `lVal` on type `&mut ManuallyDrop<VARIANT_0_0>`
+  --> src\uia.rs:88:15
+   |
+88 |         inner.lVal = val;
+   |               ^^^^ unknown field
+   |
+help: one of the expressions' fields has a field of the same name
+   |
+88 |         inner.Anonymous.lVal = val;
+   |               ++++++++++
+
+error[E0609]: no field `bstrVal` on type `&mut ManuallyDrop<VARIANT_0_0>`
+  --> src\uia.rs:98:15
+   |
+98 |         inner.bstrVal = std::mem::ManuallyDrop::new(BSTR::from(s));
+   |               ^^^^^^^ unknown field
+   |
+help: one of the expressions' fields has a field of the same name
+   |
+98 |         inner.Anonymous.bstrVal = std::mem::ManuallyDrop::new(BSTR::from(s));
+   |               ++++++++++
 
 warning: unused variable: `overlay_hwnd`
    --> src\api.rs:908:5
@@ -201,7 +243,7 @@ warning: unused variable: `error_msg`
 74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0432, E0599.
+Some errors have detailed explanations: E0282, E0308, E0432, E0599, E0609.
 For more information about an error, try `rustc --explain E0282`.
 warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 9 previous errors; 18 warnings emitted
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 11 previous errors; 18 warnings emitted
