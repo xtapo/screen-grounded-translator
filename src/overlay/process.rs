@@ -72,6 +72,10 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
         let use_json_format = preset.id == "preset_translate";
         let hide_overlay = preset.hide_overlay;
         
+        // For History
+        let preset_name_for_history = preset.name.clone();
+        let input_summary = format!("Screenshot {}x{}", crop_w, crop_h);
+        
         // Spawn UI Thread for Results
         std::thread::spawn(move || {
             // Create Primary Window (Hidden initially)
@@ -134,6 +138,21 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                                 std::thread::sleep(std::time::Duration::from_millis(100));
                                 copy_to_clipboard(&vt, HWND(0));
                             });
+                        }
+                        
+                        // --- STEP 1.6: SAVE TO HISTORY ---
+                        if !vision_text.trim().is_empty() {
+                            let entry = crate::history::HistoryEntry {
+                                id: crate::history::generate_entry_id(),
+                                preset_name: preset_name_for_history.clone(),
+                                preset_type: "image".to_string(),
+                                input_summary: input_summary.clone(),
+                                result_text: vision_text.clone(),
+                                retrans_text: None, // Will be updated if retranslation happens
+                                timestamp: crate::history::get_current_timestamp(),
+                                is_favorite: false,
+                            };
+                            crate::history::add_history_entry(entry);
                         }
 
                         // --- STEP 2: RETRANSLATE (Optional) ---
@@ -263,6 +282,7 @@ pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT
     let retranslate_model_id = preset.retranslate_model.clone();
     let retranslate_streaming_enabled = preset.retranslate_streaming_enabled;
     let retranslate_auto_copy = preset.retranslate_auto_copy;
+    let preset_name_for_history = preset.name.clone();
     
     std::thread::spawn(move || {
         let primary_hwnd = create_result_window(rect, WindowType::Primary);
@@ -273,6 +293,21 @@ pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT
         
         if auto_copy {
             copy_to_clipboard(&text, HWND(0));
+        }
+        
+        // Save to history
+        if !text.trim().is_empty() {
+            let entry = crate::history::HistoryEntry {
+                id: crate::history::generate_entry_id(),
+                preset_name: preset_name_for_history.clone(),
+                preset_type: "audio".to_string(),
+                input_summary: "Audio recording".to_string(),
+                result_text: text.clone(),
+                retrans_text: None,
+                timestamp: crate::history::get_current_timestamp(),
+                is_favorite: false,
+            };
+            crate::history::add_history_entry(entry);
         }
 
         if retranslate && !text.trim().is_empty() {

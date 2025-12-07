@@ -6,6 +6,7 @@ mod gui;
 mod overlay;
 mod icon_gen;
 mod model_config;
+mod history;
 
 use std::sync::{Arc, Mutex};
 use std::panic;
@@ -119,7 +120,7 @@ fn main() -> eframe::Result<()> {
     let icon = icon_gen::generate_icon();
     let tray_icon = TrayIconBuilder::new()
         .with_menu(Box::new(tray_menu.clone()))
-        .with_tooltip("Screen Grounded Translator (nganlinh4)")
+        .with_tooltip("XT Screen Translator (nhanhq)")
         .with_icon(icon)
         .build()
         .unwrap();
@@ -151,7 +152,7 @@ fn main() -> eframe::Result<()> {
     let initial_config = APP.lock().unwrap().config.clone();
     
     eframe::run_native(
-        "Screen Grounded Translator (SGT by nganlinh4)",
+        "XT Screen Translator (XST by nhanhq)",
         options,
         Box::new(move |cc| {
             gui::configure_fonts(&cc.egui_ctx);

@@ -119,8 +119,8 @@ impl SplashScreen {
             (rng_state >> 32) as f32 / 4294967295.0
         };
 
+        let x_map = [ "#   #", " # # ", "  #  ", " # # ", "#   #" ];
         let s_map = [ " ####", "##   ", " ### ", "   ##", "#### " ];
-        let g_map = [ " ####", "##   ", "## ##", "##  #", " ####" ];
         let t_map = [ "#####", "  #  ", "  #  ", "  #  ", "  #  " ];
 
         let spacing = 14.0;
@@ -159,11 +159,9 @@ impl SplashScreen {
             }
         };
 
-        // ADJUSTMENT: Shift all letters left by 10 units to mathematically center the "SGT" text
-        // Previous: -110, -25, 60 (Midpoint +10)
-        // New:      -120, -35, 50 (Midpoint 0)
-        spawn_letter(&s_map, -120.0, C_CYAN);
-        spawn_letter(&g_map, -35.0, C_MAGENTA);
+        // ADJUSTMENT: Center the "XST" text
+        spawn_letter(&x_map, -120.0, C_CYAN);
+        spawn_letter(&s_map, -35.0, C_MAGENTA);
         spawn_letter(&t_map, 50.0, C_CYAN);
 
         for _ in 0..60 {
@@ -242,7 +240,7 @@ impl SplashScreen {
             if t_abs < 2.0 { self.loading_text = "TRANSLATING...".to_string(); }
             else if t_abs < 4.0 { self.loading_text = "OCR...".to_string(); }
             else if t_abs < 6.0 { self.loading_text = "TRANSCRIBING...".to_string(); }
-            else { self.loading_text = "nganlinh4".to_string(); }
+            else { self.loading_text = "nhanhq".to_string(); }
         } else {
             self.loading_text = "READY TO ROCK!".to_string();
         }
@@ -528,7 +526,7 @@ impl SplashScreen {
             painter.text(
                 center + Vec2::new(0.0, 180.0),
                 Align2::CENTER_TOP,
-                "SCREEN GROUNDED TRANSLATOR",
+                "XT SCREEN TRANSLATOR",
                 FontId::proportional(24.0),
                 ui_color
             );

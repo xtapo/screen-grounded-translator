@@ -1,8 +1,8 @@
-# Screen Grounded Translator (SGT)
+# XT Screen Translator (XST)
 
-A powerful Windows utility that captures any region of your screen **or records system/microphone audio** and processes it using advanced AI models. Whether you need to translate text, extract code (OCR), summarize content, get image descriptions, **or transcribe meetings**, SGT handles it with customizable presets and global hotkeys.
+A powerful Windows utility that captures any region of your screen **or records system/microphone audio** and processes it using advanced AI models. Whether you need to translate text, extract code (OCR), summarize content, get image descriptions, **or transcribe meetings**, XST handles it with customizable presets and global hotkeys.
 
-**"Grounded"** = Anchored on screen regions — results appear in an overlay exactly where you selected them.
+**"XT"** = eXtended Translation — powerful AI translation anchored on screen regions.
 
 ## Key Features
 
@@ -50,7 +50,7 @@ Run the executable found in `target/release/`.
 
 ## Getting Started
 
-1. **Launch the App:** Open `screen-grounded-translator.exe`.
+1. **Launch the App:** Open `xt-screen-translator.exe`.
 2. **Global Settings:**
    - Paste your **Groq API Key** and/or **Gemini API Key**.
    - Toggle **Run at Windows Startup** if desired.
@@ -72,7 +72,7 @@ Run the executable found in `target/release/`.
 * **Video Understanding:** (Upcoming feature).
 
 ### Retranslation (Pipeline)
-For higher quality results, SGT can chain models:
+For higher quality results, XST can chain models:
 1. **Extraction:** Vision/Audio model extracts raw text/transcript.
 2. **Retranslation:** A specialized Text model (e.g., `GPT-OSS`, `Kimi`, `Gemini`) translates/refines the output.
 
@@ -116,6 +116,6 @@ MIT — See [LICENSE](LICENSE) file.
 
 ## Credits
 
-Developed by **nganlinh4**.
+Developed by **nhanhq**.
 * Powered by [Groq](https://groq.com) and [Google DeepMind](https://deepmind.google/technologies/gemini/).
 * Built with [Rust](https://www.rust-lang.org/) and [egui](https://github.com/emilk/egui).

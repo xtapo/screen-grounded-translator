@@ -48,6 +48,13 @@ pub struct LocaleText {
      pub empty_prompt_warning: &'static str,
      pub footer_admin_text: &'static str,
      pub footer_version: &'static str,
+     // History
+     pub history_title: &'static str,
+     pub history_search: &'static str,
+     pub history_all: &'static str,
+     pub history_favorites: &'static str,
+     pub history_clear_all: &'static str,
+     pub history_empty: &'static str,
      }
 
 impl LocaleText {
@@ -101,6 +108,12 @@ impl LocaleText {
                 empty_prompt_warning: "Cảnh báo: Câu lệnh trống có thể cho kết quả không như mong đợi!",
                 footer_admin_text: "chạy bằng admin để dịch game",
                 footer_version: "phiên bản v2.1",
+                history_title: "Lịch sử",
+                history_search: "Tìm kiếm...",
+                history_all: "Tất cả",
+                history_favorites: "Yêu thích",
+                history_clear_all: "Xóa tất cả",
+                history_empty: "Chưa có lịch sử",
                 },
             "ko" => Self {
                 api_section: "전역 설정",
@@ -150,6 +163,12 @@ impl LocaleText {
                 empty_prompt_warning: "경고: 빈 프롬프트는 예측할 수 없는 결과를 낼 수 있습니다!",
                 footer_admin_text: "게임을 번역하려면 관리자로 실행하세요",
                 footer_version: "버전 v2.1",
+                history_title: "기록",
+                history_search: "검색...",
+                history_all: "전체",
+                history_favorites: "즐겨찾기",
+                history_clear_all: "전체 삭제",
+                history_empty: "기록이 없습니다",
                 },
             _ => Self {
                 api_section: "Global Settings",
@@ -199,6 +218,12 @@ impl LocaleText {
                 empty_prompt_warning: "Warning: Empty prompt may yield unpredictable results!",
                 footer_admin_text: "Run with admin to translate games",
                 footer_version: "Version v2.1",
+                history_title: "History",
+                history_search: "Search...",
+                history_all: "All",
+                history_favorites: "Favorites",
+                history_clear_all: "Clear All",
+                history_empty: "No history yet",
                 },
                 }
                 }

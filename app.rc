@@ -8,13 +8,13 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "CompanyName", "nganlinh4"
-      VALUE "FileDescription", "Screen Grounded Translator"
+      VALUE "CompanyName", "nhanhq"
+      VALUE "FileDescription", "XT Screen Translator"
       VALUE "FileVersion", "1.0.0.0"
-      VALUE "InternalName", "screen-grounded-translator"
+      VALUE "InternalName", "xt-screen-translator"
       VALUE "LegalCopyright", "Copyright (c) 2024"
-      VALUE "OriginalFilename", "screen-grounded-translator.exe"
-      VALUE "ProductName", "Screen Grounded Translator"
+      VALUE "OriginalFilename", "xt-screen-translator.exe"
+      VALUE "ProductName", "XT Screen Translator"
       VALUE "ProductVersion", "1.0.0.0"
     END
   END

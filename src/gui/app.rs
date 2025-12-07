@@ -17,6 +17,53 @@ use crate::gui::key_mapping::egui_key_to_vk;
 use crate::gui::icons::{Icon, icon_button, draw_icon_static};
 use crate::model_config::{get_all_models, ModelType, get_model_by_id};
 
+// Simple timestamp formatter (no chrono dependency)
+fn chrono_lite_format(timestamp: u64) -> String {
+    // Simple calculation for display - offset to local time (UTC+7 as default)
+    let local_ts = timestamp + 7 * 3600; // Adjust for timezone
+    
+    // Calculate components
+    let secs_per_day = 86400u64;
+    let secs_per_hour = 3600u64;
+    let secs_per_min = 60u64;
+    
+    let days_since_epoch = local_ts / secs_per_day;
+    let remainder = local_ts % secs_per_day;
+    let hour = remainder / secs_per_hour;
+    let minute = (remainder % secs_per_hour) / secs_per_min;
+    
+    // Approximate date calculation (good enough for display)
+    let mut year = 1970u64;
+    let mut remaining_days = days_since_epoch;
+    
+    loop {
+        let days_in_year = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) { 366 } else { 365 };
+        if remaining_days < days_in_year {
+            break;
+        }
+        remaining_days -= days_in_year;
+        year += 1;
+    }
+    
+    let days_in_months = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+    
+    let mut month = 1u64;
+    for &days in &days_in_months {
+        if remaining_days < days {
+            break;
+        }
+        remaining_days -= days;
+        month += 1;
+    }
+    let day = remaining_days + 1;
+    
+    format!("{:02}/{:02} {:02}:{:02}", day, month, hour, minute)
+}
+
 // --- Monitor Enumeration Helper ---
 struct MonitorEnumContext {
     monitors: Vec<String>,
@@ -62,6 +109,7 @@ lazy_static::lazy_static! {
 enum ViewMode {
     Global,
     Preset(usize),
+    History,
 }
 
 pub struct SettingsApp {
@@ -89,6 +137,12 @@ pub struct SettingsApp {
     
     // Cache monitors
     cached_monitors: Vec<String>,
+    
+    // History state
+    history_entries: Vec<crate::history::HistoryEntry>,
+    history_search_query: String,
+    show_favorites_only: bool,
+    selected_history_id: Option<String>,
 }
 
 impl SettingsApp {
@@ -123,7 +177,7 @@ impl SettingsApp {
                                 let class_name = w!("eframe");
                                 let mut hwnd = FindWindowW(PCWSTR(class_name.as_ptr()), None);
                                 if hwnd.0 == 0 {
-                                    let title = w!("Screen Grounded Translator (SGT by nganlinh4)");
+                                    let title = w!("XT Screen Translator (XST by nhanhq)");
                                     hwnd = FindWindowW(None, PCWSTR(title.as_ptr()));
                                 }
                                 if hwnd.0 != 0 {
@@ -157,7 +211,7 @@ impl SettingsApp {
                             let class_name = w!("eframe");
                             let hwnd = FindWindowW(PCWSTR(class_name.as_ptr()), None);
                             let hwnd = if hwnd.0 == 0 {
-                                let title = w!("Screen Grounded Translator (SGT by nganlinh4)");
+                                let title = w!("XT Screen Translator (XST by nhanhq)");
                                 FindWindowW(None, PCWSTR(title.as_ptr()))
                             } else {
                                 hwnd
@@ -206,6 +260,10 @@ impl SettingsApp {
             fade_in_start: None,
             startup_stage: 0,
             cached_monitors,
+            history_entries: crate::history::load_history(),
+            history_search_query: String::new(),
+            show_favorites_only: false,
+            selected_history_id: None,
         }
     }
 
@@ -599,6 +657,20 @@ impl eframe::App for SettingsApp {
                         }
                         self.save_and_sync();
                     }
+                    
+                    ui.add_space(15.0);
+                    ui.separator();
+                    ui.add_space(5.0);
+                    
+                    // History Button
+                    let is_history = matches!(self.view_mode, ViewMode::History);
+                    ui.horizontal(|ui| {
+                        draw_icon_static(ui, Icon::Statistics, None);
+                        if ui.selectable_label(is_history, text.history_title).clicked() {
+                            self.history_entries = crate::history::load_history();
+                            self.view_mode = ViewMode::History;
+                        }
+                    });
                 });
 
                 ui.add_space(10.0); // Spacing between columns
@@ -1120,6 +1192,167 @@ impl eframe::App for SettingsApp {
                                 // Save if anything changed
                                 if preset_changed {
                                     self.save_and_sync();
+                                }
+                            }
+                        }
+                        
+                        ViewMode::History => {
+                            ui.add_space(5.0);
+                            
+                            // Check if showing detail view
+                            let selected_entry = self.selected_history_id.as_ref()
+                                .and_then(|id| self.history_entries.iter().find(|e| &e.id == id).cloned());
+                            
+                            if let Some(entry) = selected_entry {
+                                // DETAIL VIEW
+                                ui.horizontal(|ui| {
+                                    if ui.button("← Quay lại").clicked() {
+                                        self.selected_history_id = None;
+                                    }
+                                    ui.label(egui::RichText::new(&entry.preset_name).heading());
+                                });
+                                ui.add_space(5.0);
+                                
+                                // Meta info
+                                ui.horizontal(|ui| {
+                                    let type_icon = if entry.preset_type == "audio" { "🎤" } else { "🖼" };
+                                    ui.label(format!("{} {} • {}", type_icon, entry.preset_type, chrono_lite_format(entry.timestamp)));
+                                    
+                                    let star_icon = if entry.is_favorite { "★" } else { "☆" };
+                                    let star_color = if entry.is_favorite { egui::Color32::GOLD } else { ui.visuals().text_color() };
+                                    if ui.add(egui::Button::new(egui::RichText::new(star_icon).color(star_color)).frame(false)).clicked() {
+                                        crate::history::toggle_favorite(&entry.id);
+                                        self.history_entries = crate::history::load_history();
+                                    }
+                                });
+                                ui.add_space(10.0);
+                                
+                                // Full result text
+                                ui.label(egui::RichText::new("Kết quả:").strong());
+                                egui::ScrollArea::vertical().max_height(250.0).show(ui, |ui| {
+                                    ui.add(egui::TextEdit::multiline(&mut entry.result_text.as_str())
+                                        .desired_width(f32::INFINITY)
+                                        .font(egui::TextStyle::Body));
+                                });
+                                
+                                ui.add_space(10.0);
+                                ui.horizontal(|ui| {
+                                    if ui.button("📋 Copy").clicked() {
+                                        ui.output_mut(|o| o.copied_text = entry.result_text.clone());
+                                    }
+                                    if ui.button("🗑️ Xóa").clicked() {
+                                        crate::history::delete_entry(&entry.id);
+                                        self.history_entries = crate::history::load_history();
+                                        self.selected_history_id = None;
+                                    }
+                                });
+                            } else {
+                                // LIST VIEW
+                                ui.label(egui::RichText::new(text.history_title).heading());
+                                ui.add_space(10.0);
+                                
+                                // Search and Filter Row
+                                ui.horizontal(|ui| {
+                                    ui.add(egui::TextEdit::singleline(&mut self.history_search_query)
+                                        .hint_text(text.history_search)
+                                        .desired_width(200.0));
+                                    ui.add_space(10.0);
+                                    if ui.selectable_label(!self.show_favorites_only, text.history_all).clicked() {
+                                        self.show_favorites_only = false;
+                                    }
+                                    if ui.selectable_label(self.show_favorites_only, text.history_favorites).clicked() {
+                                        self.show_favorites_only = true;
+                                    }
+                                });
+                                ui.add_space(10.0);
+                                
+                                // Collect actions
+                                let mut entry_to_delete: Option<String> = None;
+                                let mut entry_to_toggle: Option<String> = None;
+                                let mut entry_to_select: Option<String> = None;
+                                
+                                let entries_snapshot = self.history_entries.clone();
+                                let search_q = self.history_search_query.to_lowercase();
+                                let show_favs = self.show_favorites_only;
+                                
+                                let filtered: Vec<_> = entries_snapshot.iter()
+                                    .filter(|e| {
+                                        if show_favs && !e.is_favorite { return false; }
+                                        if !search_q.is_empty() {
+                                            return e.result_text.to_lowercase().contains(&search_q) 
+                                                || e.preset_name.to_lowercase().contains(&search_q);
+                                        }
+                                        true
+                                    })
+                                    .collect();
+                                
+                                if filtered.is_empty() {
+                                    ui.add_space(20.0);
+                                    ui.label(egui::RichText::new(text.history_empty).italics().weak());
+                                } else {
+                                    egui::ScrollArea::vertical().max_height(350.0).show(ui, |ui| {
+                                        for entry in &filtered {
+                                            let response = ui.group(|ui| {
+                                                ui.horizontal(|ui| {
+                                                    let star_icon = if entry.is_favorite { "★" } else { "☆" };
+                                                    let star_color = if entry.is_favorite { egui::Color32::GOLD } else { ui.visuals().text_color() };
+                                                    if ui.add(egui::Button::new(egui::RichText::new(star_icon).color(star_color)).frame(false)).clicked() {
+                                                        entry_to_toggle = Some(entry.id.clone());
+                                                    }
+                                                    
+                                                    let type_icon = if entry.preset_type == "audio" { "🎤" } else { "🖼" };
+                                                    ui.label(format!("{} {}", type_icon, entry.preset_name));
+                                                    
+                                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                        if icon_button(ui, Icon::Delete).clicked() {
+                                                            entry_to_delete = Some(entry.id.clone());
+                                                        }
+                                                        let dt = chrono_lite_format(entry.timestamp);
+                                                        ui.label(egui::RichText::new(dt).weak().small());
+                                                    });
+                                                });
+                                                
+                                                // Clickable preview
+                                                let preview: String = entry.result_text.chars().take(100).collect();
+                                                let preview = if entry.result_text.len() > 100 {
+                                                    format!("{}...", preview)
+                                                } else {
+                                                    preview
+                                                };
+                                                if ui.add(egui::Label::new(&preview).sense(egui::Sense::click())).clicked() {
+                                                    entry_to_select = Some(entry.id.clone());
+                                                }
+                                            });
+                                            
+                                            // Make the whole group clickable
+                                            if response.response.clicked() {
+                                                entry_to_select = Some(entry.id.clone());
+                                            }
+                                            
+                                            ui.add_space(3.0);
+                                        }
+                                    });
+                                }
+                                
+                                // Handle actions
+                                if let Some(id) = entry_to_select {
+                                    self.selected_history_id = Some(id);
+                                }
+                                if let Some(id) = entry_to_toggle {
+                                    crate::history::toggle_favorite(&id);
+                                    self.history_entries = crate::history::load_history();
+                                }
+                                if let Some(id) = entry_to_delete {
+                                    crate::history::delete_entry(&id);
+                                    self.history_entries = crate::history::load_history();
+                                }
+                                
+                                ui.add_space(10.0);
+                                if !self.history_entries.is_empty() {
+                                    if ui.button(text.history_clear_all).clicked() {
+                                        crate::history::clear_all_history();
+                                        self.history_entries = Vec::new();
+                                    }
                                 }
                             }
                         }
