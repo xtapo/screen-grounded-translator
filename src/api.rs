@@ -55,6 +55,7 @@ lazy_static::lazy_static! {
 pub fn translate_image_streaming<F>(
     groq_api_key: &str,
     gemini_api_key: &str,
+    openrouter_api_key: &str,
     prompt: String,
     model: String,
     provider: String,
@@ -171,6 +172,104 @@ where
                     }
                 }
             }
+        }
+    } else if provider == "openrouter" {
+        // OpenRouter API
+        if openrouter_api_key.trim().is_empty() {
+             return Err(anyhow::anyhow!("NO_API_KEY"));
+        }
+
+        let payload = if streaming_enabled {
+            serde_json::json!({
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            { "type": "text", "text": prompt },
+                            { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{}", b64_image) } }
+                        ]
+                    }
+                ],
+                "stream": true
+            })
+        } else {
+             serde_json::json!({
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            { "type": "text", "text": prompt },
+                            { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{}", b64_image) } }
+                        ]
+                    }
+                ],
+                "stream": false
+            })
+        };
+
+        let mut resp_result = Err(anyhow::anyhow!("Request not started"));
+        for retry in 0..3 {
+            let r = UREQ_AGENT.post("https://openrouter.ai/api/v1/chat/completions")
+                .set("Authorization", &format!("Bearer {}", openrouter_api_key))
+                .set("HTTP-Referer", "https://github.com/nhanh-vo/screen-grounded-translator")
+                .set("X-Title", "XT Screen Translator")
+                .send_json(payload.clone());
+
+            match r {
+                Ok(res) => {
+                    resp_result = Ok(res);
+                    break;
+                }
+                Err(ureq::Error::Status(429, _)) => {
+                    log::warn!("OpenRouter 429 Rate Limit. Retrying...");
+                    if retry < 2 {
+                        std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
+                        continue;
+                    }
+                    resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). Please try a different model or wait."));
+                }
+                Err(e) => {
+                    let err_str = e.to_string();
+                    if err_str.contains("401") {
+                         resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
+                    } else if err_str.contains("402") {
+                         resp_result = Err(anyhow::anyhow!("OpenRouter: Insufficient credits or not free."));
+                    } else {
+                         resp_result = Err(anyhow::anyhow!("OpenRouter API Error: {}", err_str));
+                    }
+                    break;
+                }
+            }
+        }
+        let resp = resp_result?;
+
+        if streaming_enabled {
+            let reader = BufReader::new(resp.into_reader());
+            for line in reader.lines() {
+                let line = line?;
+                if line.starts_with("data: ") {
+                     let data = &line[6..];
+                     if data == "[DONE]" { break; }
+                     match serde_json::from_str::<StreamChunk>(data) {
+                         Ok(chunk) => {
+                             if let Some(content) = chunk.choices.get(0).and_then(|c| c.delta.content.as_ref()) {
+                                 full_content.push_str(content);
+                                 on_chunk(content);
+                             }
+                         }
+                         Err(_) => continue,
+                     }
+                }
+            }
+        } else {
+            let chat_resp: ChatCompletionResponse = resp.into_json()
+                .map_err(|e| anyhow::anyhow!("Failed to parse non-streaming response: {}", e))?;
+             if let Some(choice) = chat_resp.choices.first() {
+                 full_content = choice.message.content.clone();
+                 on_chunk(&full_content);
+             }
         }
     } else {
         // Groq API (default)
@@ -299,6 +398,7 @@ where
 pub fn translate_text_streaming<F>(
     groq_api_key: &str,
     gemini_api_key: &str,
+    openrouter_api_key: &str,
     text: String,
     target_lang: String,
     model: String,
@@ -393,6 +493,91 @@ where
                     }
                 }
             }
+        }
+
+    } else if provider == "openrouter" {
+        // --- OPENROUTER TEXT API ---
+        if openrouter_api_key.trim().is_empty() {
+            return Err(anyhow::anyhow!("NO_API_KEY"));
+        }
+
+        let payload = if streaming_enabled {
+             serde_json::json!({
+                "model": model,
+                "messages": [
+                    { "role": "user", "content": prompt }
+                ],
+                "stream": true
+            })
+        } else {
+             serde_json::json!({
+                "model": model,
+                "messages": [
+                    { "role": "user", "content": prompt }
+                ],
+                "stream": false
+            })
+        };
+
+        let mut resp_result = Err(anyhow::anyhow!("Request not started"));
+        for retry in 0..3 {            
+            let r = UREQ_AGENT.post("https://openrouter.ai/api/v1/chat/completions")
+                .set("Authorization", &format!("Bearer {}", openrouter_api_key))
+                .set("HTTP-Referer", "https://github.com/nhanh-vo/screen-grounded-translator")
+                .set("X-Title", "XT Screen Translator")
+                .send_json(payload.clone());
+
+            match r {
+                Ok(res) => {
+                     resp_result = Ok(res);
+                     break;
+                }
+                Err(ureq::Error::Status(429, _)) => {
+                     log::warn!("OpenRouter 429 Rate Limit. Retrying...");
+                     if retry < 2 {
+                         std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
+                         continue;
+                     }
+                     resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). Please try a different model or wait."));
+                }
+                Err(e) => {
+                    let err_str = e.to_string();
+                    if err_str.contains("401") {
+                        resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
+                    } else {
+                        resp_result = Err(anyhow::anyhow!("OpenRouter API Error: {}", err_str));
+                    }
+                    break;
+                }
+            }
+        }
+        let resp = resp_result?;
+
+         if streaming_enabled {
+            let reader = BufReader::new(resp.into_reader());
+            for line in reader.lines() {
+                let line = line?;
+                if line.starts_with("data: ") {
+                     let data = &line[6..];
+                     if data == "[DONE]" { break; }
+                     match serde_json::from_str::<StreamChunk>(data) {
+                         Ok(chunk) => {
+                             if let Some(content) = chunk.choices.get(0).and_then(|c| c.delta.content.as_ref()) {
+                                 full_content.push_str(content);
+                                 on_chunk(content);
+                             }
+                         }
+                         Err(_) => continue,
+                     }
+                }
+            }
+        } else {
+            let chat_resp: ChatCompletionResponse = resp.into_json()
+                .map_err(|e| anyhow::anyhow!("Failed to parse non-streaming response: {}", e))?;
+             if let Some(choice) = chat_resp.choices.first() {
+                 full_content = choice.message.content.clone();
+                 on_chunk(&full_content);
+             }
         }
 
     } else {

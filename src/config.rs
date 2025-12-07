@@ -114,6 +114,8 @@ impl Default for LiveCaptionsConfig {
 pub struct Config {
     pub api_key: String,
     pub gemini_api_key: String,
+    #[serde(default)]
+    pub openrouter_api_key: String,
     pub presets: Vec<Preset>,
     pub active_preset_idx: usize, // For UI selection
     pub dark_mode: bool,
@@ -441,6 +443,7 @@ pub struct Config {
         Self {
             api_key: "".to_string(),
             gemini_api_key: "".to_string(),
+            openrouter_api_key: "".to_string(),
             presets: vec![
                 trans_preset, trans_retrans_preset, ocr_preset, extract_retrans_preset, 
                 sum_preset, desc_preset, audio_preset, study_lang_preset, 

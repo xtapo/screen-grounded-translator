@@ -95,11 +95,12 @@ fn run_overlay_window_thread(config: LiveCaptionsConfig) -> anyhow::Result<()> {
     }
     
     // Get API keys
-    let (groq_key, gemini_key, model) = {
+    let (groq_key, gemini_key, openrouter_key, model) = {
         let app = APP.lock().map_err(|_| anyhow::anyhow!("Failed to lock APP"))?;
         (
             app.config.api_key.clone(),
             app.config.gemini_api_key.clone(),
+            app.config.openrouter_api_key.clone(),
             config.translation_model.clone(),
         )
     };
@@ -124,6 +125,7 @@ fn run_overlay_window_thread(config: LiveCaptionsConfig) -> anyhow::Result<()> {
                 let translated = match translate_text_streaming(
                     &groq_key,
                     &gemini_key,
+                    &openrouter_key,
                     sentence.clone(),
                     target_lang.clone(),
                     model.clone(),

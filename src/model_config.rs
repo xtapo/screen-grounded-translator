@@ -243,6 +243,83 @@ lazy_static::lazy_static! {
             true,
             "50 lượt/ngày"
         ),
+        ModelConfig::new(
+            "gemma-3-27b-free",
+            "openrouter",
+            "Gemma 3 27B (Miễn phí)",
+            "Gemma 3 27B (무료)",
+            "Gemma 3 27B (Free)",
+            "google/gemma-3-27b-it:free",
+            ModelType::Text,
+            true,
+            "Check OpenRouter"
+        ),
+        ModelConfig::new(
+            "gemini-2.0-flash-exp-free",
+            "openrouter",
+            "Gemini 2.0 Flash Exp (Miễn phí)",
+            "Gemini 2.0 Flash Exp (무료)",
+            "Gemini 2.0 Flash Exp (Free)",
+            "google/gemini-2.0-flash-exp:free",
+            ModelType::Vision,
+            true,
+            "Check OpenRouter"
+        ),
+        ModelConfig::new(
+            "llama-3.2-11b-vision-free",
+            "openrouter",
+            "Llama 3.2 11B Vision (Miễn phí)",
+            "Llama 3.2 11B Vision (무료)",
+            "Llama 3.2 11B Vision (Free)",
+            "meta-llama/llama-3.2-11b-vision-instruct:free",
+            ModelType::Vision,
+            true,
+            "Check OpenRouter"
+        ),
+        ModelConfig::new(
+            "gemini-exp-1206-free",
+            "openrouter",
+            "Gemini Exp 1206 (Miễn phí)",
+            "Gemini Exp 1206 (무료)",
+            "Gemini Exp 1206 (Free)",
+            "google/gemini-exp-1206:free",
+            ModelType::Vision,
+            true,
+            "Check OpenRouter"
+        ),
+        ModelConfig::new(
+            "gemini-flash-1.5-8b-free",
+            "openrouter",
+            "Gemini Flash 1.5 8B (Miễn phí)",
+            "Gemini Flash 1.5 8B (무료)",
+            "Gemini Flash 1.5 8B (Free)",
+            "google/gemini-flash-1.5-8b", 
+            ModelType::Text, 
+            true,
+            "Check OpenRouter"
+        ),
+         ModelConfig::new(
+             "zephyr-7b-free",
+             "openrouter",
+             "Zephyr 7B (Miễn phí)",
+             "Zephyr 7B (무료)",
+             "Zephyr 7B (Free)",
+             "huggingfaceh4/zephyr-7b-beta:free",
+             ModelType::Text,
+             true,
+             "Check OpenRouter"
+         ),
+         ModelConfig::new(
+             "mistral-7b-free",
+             "openrouter",
+             "Mistral 7B (Miễn phí)",
+             "Mistral 7B (무료)",
+             "Mistral 7B (Free)",
+             "mistralai/mistral-7b-instruct:free",
+             ModelType::Text,
+             true,
+             "Check OpenRouter"
+         ),
     ];
 }
 

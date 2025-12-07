@@ -57,6 +57,7 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
         
         let groq_api_key = config.api_key.clone();
         let gemini_api_key = config.gemini_api_key.clone();
+        let openrouter_api_key = config.openrouter_api_key.clone();
         let ui_language = config.ui_language.clone();
         
         // Prepare Prompt - replace all {languageN} with actual languages
@@ -101,6 +102,7 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                 let vision_res = translate_image_streaming(
                     &groq_api_key, 
                     &gemini_api_key, 
+                    &openrouter_api_key,
                     final_prompt, 
                     model_name, 
                     provider, 
@@ -182,7 +184,8 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                              
                              let vision_text_for_retrans = vision_text.clone();
                              let groq_key_for_retrans = groq_api_key.clone();
-                             let gemini_key_for_retrans = gemini_api_key.clone(); // Capture key
+                             let gemini_key_for_retrans = gemini_api_key.clone();
+                             let openrouter_key_for_retrans = openrouter_api_key.clone();
                              
                              // Spawn Secondary UI Thread
                              std::thread::spawn(move || {
@@ -210,7 +213,8 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
 
                                      let text_res = translate_text_streaming(
                                          &groq_key_for_retrans,
-                                         &gemini_key_for_retrans, // Pass Gemini Key
+                                         &gemini_key_for_retrans, 
+                                         &openrouter_key_for_retrans,
                                          vision_text_for_retrans,
                                          retranslate_to,
                                          tm_name,
@@ -294,6 +298,11 @@ pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT
     let retranslate_auto_copy = preset.retranslate_auto_copy;
     let preset_name_for_history = preset.name.clone();
     
+    let (groq_key, gemini_key, openrouter_key) = {
+        let app = crate::APP.lock().unwrap();
+        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.openrouter_api_key.clone())
+    };
+    
     std::thread::spawn(move || {
         let primary_hwnd = create_result_window(rect, WindowType::Primary);
         if !hide_overlay {
@@ -318,81 +327,75 @@ pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT
                 is_favorite: false,
             };
             crate::history::add_history_entry(entry);
-        }
 
-        if retranslate && !text.trim().is_empty() {
-            let rect_sec = retrans_rect.unwrap();
-            let text_for_retrans = text.clone();
-            let (groq_key, gemini_key) = {
-                let app = crate::APP.lock().unwrap();
-                (app.config.api_key.clone(), app.config.gemini_api_key.clone())
-            };
-            
-            std::thread::spawn(move || {
-                let secondary_hwnd = create_result_window(rect_sec, WindowType::SecondaryExplicit);
-                link_windows(primary_hwnd, secondary_hwnd);
+            if retranslate {
+                let text_for_retrans = text.clone();
+                let groq_key_r = groq_key.clone();
+                let gemini_key_r = gemini_key.clone();
+                let openrouter_key_r = openrouter_key.clone();
+                let rect_r = retrans_rect.unwrap();
                 
-                if !hide_overlay {
-                    unsafe { ShowWindow(secondary_hwnd, SW_SHOW); }
-                    update_window_text(secondary_hwnd, "");
-                }
-
-                // API Call for Retranslation
                 std::thread::spawn(move || {
-                    let acc_text = Arc::new(Mutex::new(String::new()));
-                    let acc_text_clone = acc_text.clone();
-                    
-                    let tm_config = crate::model_config::get_model_by_id(&retranslate_model_id);
-                    let (tm_name, tm_provider) = match tm_config {
-                        Some(m) => (m.full_name, m.provider),
-                        None => ("openai/gpt-oss-20b".to_string(), "groq".to_string())
-                    };
+                    let secondary_hwnd = create_result_window(rect_r, WindowType::SecondaryExplicit);
+                    link_windows(primary_hwnd, secondary_hwnd);
+                    if !hide_overlay {
+                        unsafe { ShowWindow(secondary_hwnd, SW_SHOW); }
+                        update_window_text(secondary_hwnd, "...");
+                    }
 
-                    let text_res = translate_text_streaming(
-                        &groq_key,
-                        &gemini_key,
-                        text_for_retrans,
-                        retranslate_to,
-                        tm_name,
-                        tm_provider,
-                        retranslate_streaming_enabled,
-                        false,
-                        |chunk| {
-                            let mut t = acc_text_clone.lock().unwrap();
-                            t.push_str(chunk);
-                            if !hide_overlay {
-                                update_window_text(secondary_hwnd, &t);
+                    // Worker for Retranslation API
+                    std::thread::spawn(move || {
+                        let tm_config = crate::model_config::get_model_by_id(&retranslate_model_id);
+                        let (tm_name, tm_provider) = match tm_config {
+                            Some(m) => (m.full_name, m.provider),
+                            None => ("openai/gpt-oss-20b".to_string(), "groq".to_string())
+                        };
+
+                        let accumulated = Arc::new(Mutex::new(String::new()));
+                        let acc_clone = accumulated.clone();
+
+                        let _ = translate_text_streaming(
+                            &groq_key_r,
+                            &gemini_key_r,
+                            &openrouter_key_r,
+                            text_for_retrans,
+                            retranslate_to,
+                            tm_name,
+                            tm_provider,
+                            retranslate_streaming_enabled,
+                            false,
+                            |chunk| {
+                                let mut t = acc_clone.lock().unwrap();
+                                t.push_str(chunk);
+                                if !hide_overlay {
+                                    update_window_text(secondary_hwnd, &t);
+                                }
                             }
-                        }
-                    );
-                    
-                    if let Ok(final_text) = text_res {
+                        );
+                        
+                        let final_text = accumulated.lock().unwrap().clone();
                         if !hide_overlay {
                             update_window_text(secondary_hwnd, &final_text);
                         }
                         if retranslate_auto_copy {
-                            std::thread::spawn(move || {
+                             std::thread::spawn(move || {
                                 std::thread::sleep(std::time::Duration::from_millis(100));
                                 copy_to_clipboard(&final_text, HWND(0));
                             });
                         }
-                    } else if let Err(e) = text_res {
-                        if !hide_overlay {
-                            update_window_text(secondary_hwnd, &format!("Error: {}", e));
+                    });
+
+                    // Message Loop for Secondary
+                    unsafe {
+                        let mut msg = MSG::default();
+                        while GetMessageW(&mut msg, None, 0, 0).into() {
+                            TranslateMessage(&msg);
+                            DispatchMessageW(&msg);
+                            if !IsWindow(secondary_hwnd).as_bool() { break; }
                         }
                     }
                 });
-
-                // Message Loop for Secondary
-                unsafe {
-                    let mut msg = MSG::default();
-                    while GetMessageW(&mut msg, None, 0, 0).into() {
-                        TranslateMessage(&msg);
-                        DispatchMessageW(&msg);
-                        if !IsWindow(secondary_hwnd).as_bool() { break; }
-                    }
-                }
-            });
+            }
         }
         
         unsafe {
@@ -439,9 +442,9 @@ pub fn process_audio_post_record(
     let model_name = model_config.full_name;
     let provider = model_config.provider;
 
-    let (groq_api_key, gemini_api_key, ui_language) = {
+    let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
         let app = crate::APP.lock().unwrap();
-        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.ui_language.clone())
+        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.openrouter_api_key.clone(), app.config.ui_language.clone())
     };
 
     let mut final_prompt = preset.prompt.clone();
@@ -469,6 +472,14 @@ pub fn process_audio_post_record(
     std::thread::spawn(move || {
         let primary_hwnd = create_result_window(rect, WindowType::Primary);
         
+        let secondary_hwnd = if retranslate {
+            if let Some(r) = retranslate_rect {
+                let hwnd = create_result_window(r, WindowType::SecondaryExplicit);
+                link_windows(primary_hwnd, hwnd);
+                Some(hwnd)
+            } else { None }
+        } else { None };
+
         // Indicate processing start
         if !hide_overlay {
             unsafe { 
@@ -477,9 +488,14 @@ pub fn process_audio_post_record(
                     PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)); 
                 }
                 ShowWindow(primary_hwnd, SW_SHOW); 
+                if let Some(sec) = secondary_hwnd {
+                    ShowWindow(sec, SW_SHOW);
+                }
             }
-            // Use local string loading if possible, or hardcode simplified for now
             update_window_text(primary_hwnd, "Processing...");
+            if let Some(sec) = secondary_hwnd {
+                 update_window_text(sec, "...");
+            }
         } else {
              unsafe { 
                 if IsWindow(overlay_hwnd).as_bool() {
@@ -553,76 +569,58 @@ pub fn process_audio_post_record(
                         crate::history::add_history_entry(entry);
                     }
                     
-                    // Retranslate Logic
-                    if retranslate && !full_text.trim().is_empty() {
-                        let rect_sec = retranslate_rect.unwrap();
-                        let text_for_retrans = full_text.clone();
-                        
-                        let (groq_key_r, gemini_key_r) = {
-                            let app = crate::APP.lock().unwrap();
-                            (app.config.api_key.clone(), app.config.gemini_api_key.clone())
-                        };
-
-                        // Spawn Secondary Window Thread
+                    // Retranslate API
+                    if let Some(sec_hwnd) = secondary_hwnd {
                         std::thread::spawn(move || {
-                            let secondary_hwnd = create_result_window(rect_sec, WindowType::SecondaryExplicit);
-                            link_windows(primary_hwnd, secondary_hwnd);
-
-                             if !hide_overlay {
-                                unsafe { ShowWindow(secondary_hwnd, SW_SHOW); }
-                                update_window_text(secondary_hwnd, "");
-                            }
-                            
-                            // Retranslate API
-                             std::thread::spawn(move || {
-                                 let acc_retrans = Arc::new(Mutex::new(String::new()));
-                                 let acc_retrans_clone = acc_retrans.clone();
-                                 
-                                let tm_config = crate::model_config::get_model_by_id(&retranslate_model_id);
-                                let (tm_name, tm_provider) = match tm_config {
-                                    Some(m) => (m.full_name, m.provider),
-                                    None => ("openai/gpt-oss-20b".to_string(), "groq".to_string())
-                                };
-                                
-                                let _ = translate_text_streaming(
-                                      &groq_key_r,
-                                      &gemini_key_r,
-                                      text_for_retrans,
-                                      retranslate_to,
-                                      tm_name,
-                                      tm_provider,
-                                      retranslate_streaming_enabled,
-                                      false,
-                                      |chunk| {
-                                          let mut t = acc_retrans_clone.lock().unwrap();
-                                          t.push_str(chunk);
-                                          if !hide_overlay {
-                                              update_window_text(secondary_hwnd, &t);
-                                          }
-                                      }
-                                );
-                                
-                                let final_retrans = acc_retrans_clone.lock().unwrap().clone();
-                                if !hide_overlay {
-                                     update_window_text(secondary_hwnd, &final_retrans);
-                                }
-                                if retranslate_auto_copy {
-                                     std::thread::spawn(move || {
-                                        std::thread::sleep(std::time::Duration::from_millis(100));
-                                        copy_to_clipboard(&final_retrans, HWND(0));
-                                    });
-                                }
-                             });
+                             let acc_retrans = Arc::new(Mutex::new(String::new()));
+                             let acc_retrans_clone = acc_retrans.clone();
                              
-                            unsafe {
-                                let mut msg = MSG::default();
-                                while GetMessageW(&mut msg, None, 0, 0).into() {
-                                    TranslateMessage(&msg);
-                                    DispatchMessageW(&msg);
-                                    if !IsWindow(secondary_hwnd).as_bool() { break; }
+                            let tm_config = crate::model_config::get_model_by_id(&retranslate_model_id);
+                            let (tm_name, tm_provider) = match tm_config {
+                                Some(m) => (m.full_name, m.provider),
+                                None => ("openai/gpt-oss-20b".to_string(), "groq".to_string())
+                            };
+
+                            let text_res = translate_text_streaming(
+                                &groq_api_key,
+                                &gemini_api_key,
+                                &openrouter_api_key,
+                                full_text.clone(),
+                                retranslate_to,
+                                tm_name,
+                                tm_provider,
+                                retranslate_streaming_enabled,
+                                false,
+                                |chunk| {
+                                    let mut t = acc_retrans_clone.lock().unwrap();
+                                    t.push_str(chunk);
+                                    if !hide_overlay {
+                                        update_window_text(sec_hwnd, &t);
+                                    }
                                 }
+                            );
+                            
+                            let final_retrans = acc_retrans_clone.lock().unwrap().clone();
+                            if !hide_overlay {
+                                 update_window_text(sec_hwnd, &final_retrans);
                             }
-                        });
+                            if retranslate_auto_copy {
+                                 std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_millis(100));
+                                    copy_to_clipboard(&final_retrans, HWND(0));
+                                });
+                            }
+                         });
+                         
+                        // Secondary Window Message Loop
+                        unsafe {
+                            let mut msg = MSG::default();
+                            while GetMessageW(&mut msg, None, 0, 0).into() {
+                                TranslateMessage(&msg);
+                                DispatchMessageW(&msg);
+                                if !IsWindow(sec_hwnd).as_bool() { break; }
+                            }
+                        }
                     }
                 }
                 Err(e) => {
@@ -681,9 +679,9 @@ pub fn start_live_translation_session(
     let model_name = model_config.full_name;
     let provider = model_config.provider;
 
-    let (groq_api_key, gemini_api_key, ui_language) = {
+    let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
         let app = crate::APP.lock().unwrap();
-        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.ui_language.clone())
+        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.openrouter_api_key.clone(), app.config.ui_language.clone())
     };
 
     let mut final_prompt = preset.prompt.clone();
@@ -815,6 +813,7 @@ pub fn start_live_translation_session(
                             let _ = translate_text_streaming(
                                 &groq_api_key,
                                 &gemini_api_key,
+                                &openrouter_api_key,
                                 text_to_trans,
                                 retranslate_to.clone(),
                                 tm_name,
@@ -902,9 +901,9 @@ pub fn start_live_vision_session(
     let model_name = model_config.full_name;
     let provider = model_config.provider;
 
-    let (groq_api_key, gemini_api_key, ui_language) = {
+    let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
         let app = crate::APP.lock().unwrap();
-        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.ui_language.clone())
+        (app.config.api_key.clone(), app.config.gemini_api_key.clone(), app.config.openrouter_api_key.clone(), app.config.ui_language.clone())
     };
 
     let mut final_prompt = preset.prompt.clone();
@@ -974,6 +973,7 @@ pub fn start_live_vision_session(
                 let res: anyhow::Result<String> = translate_image_streaming(
                     &groq_api_key,
                     &gemini_api_key,
+                    &openrouter_api_key,
                     final_prompt.clone(),
                     model_name.clone(),
                     provider.clone(),
@@ -1063,6 +1063,7 @@ pub fn start_live_vision_session(
                             let _ = translate_text_streaming(
                                 &groq_api_key,
                                 &gemini_api_key,
+                                &openrouter_api_key,
                                 text_to_trans,
                                 retranslate_to.clone(),
                                 tm_name,

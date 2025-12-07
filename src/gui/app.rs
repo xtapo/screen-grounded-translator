@@ -124,6 +124,7 @@ pub struct SettingsApp {
     auto_launcher: Option<AutoLaunch>,
     show_api_key: bool,
     show_gemini_api_key: bool,
+    show_openrouter_api_key: bool,
     
     // New State
     view_mode: ViewMode,
@@ -253,6 +254,7 @@ impl SettingsApp {
             auto_launcher: Some(auto),
             show_api_key: false,
             show_gemini_api_key: false,
+            show_openrouter_api_key: false,
             view_mode,
             recording_hotkey_for_preset: None,
             hotkey_conflict_msg: None,
@@ -709,6 +711,19 @@ impl eframe::App for SettingsApp {
                                     let eye_icon = if self.show_gemini_api_key { Icon::EyeOpen } else { Icon::EyeClosed };
                                     if icon_button(ui, eye_icon).clicked() { self.show_gemini_api_key = !self.show_gemini_api_key; }
                                 });
+
+                                ui.add_space(5.0);
+                                ui.horizontal(|ui| {
+                                    ui.label(text.openrouter_api_key_label);
+                                    if ui.link(text.openrouter_get_key_link).clicked() { let _ = open::that("https://openrouter.ai/keys"); }
+                                });
+                                ui.horizontal(|ui| {
+                                    if ui.add(egui::TextEdit::singleline(&mut self.config.openrouter_api_key).password(!self.show_openrouter_api_key).desired_width(320.0)).changed() {
+                                        self.save_and_sync();
+                                    }
+                                    let eye_icon = if self.show_openrouter_api_key { Icon::EyeOpen } else { Icon::EyeClosed };
+                                    if icon_button(ui, eye_icon).clicked() { self.show_openrouter_api_key = !self.show_openrouter_api_key; }
+                                });
                             });
 
                             ui.add_space(10.0);
@@ -747,7 +762,7 @@ impl eframe::App for SettingsApp {
                                         ui.label(model.full_name.clone());
                                         
                                         // 2. Real-time Status
-                                        if model.provider == "groq" {
+                                        if model.provider == "groq" || model.provider == "openrouter" {
                                             // Look up by FULL NAME
                                             let status = usage_stats.get(&model.full_name).cloned().unwrap_or_else(|| {
                                                 "??? / ?".to_string()

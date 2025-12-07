@@ -1,207 +1,23 @@
    Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
-error[E0432]: unresolved import `windows::Win32::System::Variant`
- --> src\uia.rs:3:29
-  |
-3 | use windows::Win32::System::Variant::*;
-  |                             ^^^^^^^ could not find `Variant` in `System`
-
-warning: unused import: `Mutex`
- --> src\api.rs:6:22
-  |
-6 | use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc};
-  |                      ^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `windows::Win32::Foundation::*`
- --> src\capture.rs:2:5
-  |
-2 | use windows::Win32::Foundation::*;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `windows::Win32::Foundation::*`
- --> src\uia.rs:4:5
-  |
-4 | use windows::Win32::Foundation::*;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `windows::Win32::Graphics::Gdi::*`
-  --> src\main.rs:19:5
-   |
-19 | use windows::Win32::Graphics::Gdi::*;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:25:40
-     |
-  25 | ...   let cond_window = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_WindowControlTypeId.0 as i...
-     |                                  ^^^^^^^^^^^^^^^^^^^^^^^
-     |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
-     |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
-
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:28:41
-     |
-  28 |             let cond_name_en = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Live Captions"))?;
-     |                                         ^^^^^^^^^^^^^^^^^^^^^^^
-     |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
-     |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
-
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:31:46
-   |
-31 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
-   |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
-   |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
-
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:45:41
-     |
-  45 |             let cond_name_vi = self.uia.CreatePropertyCondition(UIA_NamePropertyId, &to_variant_bstr("Phß╗Ñ ─æß╗ü trß╗▒c tiß║┐p"))?;
-     |                                         ^^^^^^^^^^^^^^^^^^^^^^^
-     |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
-     |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
-
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:48:47
-   |
-48 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
-   |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:49:33
-   |
-49 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
-
-error[E0599]: no method named `CreatePropertyCondition` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-    --> src\uia.rs:60:34
-     |
-  60 | ...   let cond_text = self.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &to_variant_i32(UIA_TextControlTypeId.0 as i32))?;
-     |                                ^^^^^^^^^^^^^^^^^^^^^^^
-     |
-help: there is a method `CreateNotCondition` with a similar name, but with different arguments
-    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.48.0\src\Windows\Win32\UI\Accessibility\mod.rs:4925:5
-     |
-4925 | /     pub unsafe fn CreateNotCondition<P0>(&self, condition: P0) -> ::windows::core::Result<IUIAutomationCondition>
-4926 | |     where
-4927 | |         P0: ::windows::core::IntoParam<IUIAutomationCondition>,
-     | |_______________________________________________________________^
-
-warning: unused variable: `overlay_hwnd`
-   --> src\api.rs:908:5
+error: mismatched closing delimiter: `}`
+   --> src\overlay\process.rs:472:23
     |
-908 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
-    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+472 |     std::thread::spawn(move || {
+    |                       ^ unclosed delimiter
+...
+617 |                 }
+    |                 ^ mismatched closing delimiter
+
+error: unexpected closing delimiter: `}`
+   --> src\overlay\process.rs:622:13
     |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+532 |             match res {
+    |                       - the nearest open delimiter
+...
+615 |                         });
+    |                          - missing open `(` for this delimiter
+...
+622 |             }
+    |             ^ unexpected closing delimiter
 
-warning: variable does not need to be mutable
-   --> src\overlay\result\mod.rs:231:17
-    |
-231 |             let mut show_system_cursor = false;
-    |                 ----^^^^^^^^^^^^^^^^^^
-    |                 |
-    |                 help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `show_system_cursor`
-   --> src\overlay\result\mod.rs:231:17
-    |
-231 |             let mut show_system_cursor = false;
-    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
-
-warning: unused variable: `chunk`
-   --> src\overlay\process.rs:804:34
-    |
-804 | ...                   |chunk| {
-    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
-warning: unused variable: `chunk`
-   --> src\overlay\process.rs:744:30
-    |
-744 | ...                   |chunk| { 
-    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
-warning: unused variable: `overlay_hwnd`
-   --> src\overlay\process.rs:652:5
-    |
-652 |     overlay_hwnd: HWND,
-    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
-
-warning: unused variable: `ui_language`
-   --> src\overlay\process.rs:684:40
-    |
-684 |     let (groq_api_key, gemini_api_key, ui_language) = {
-    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
-
-warning: unused variable: `streaming_enabled`
-   --> src\overlay\process.rs:696:9
-    |
-696 |     let streaming_enabled = preset.streaming_enabled;
-    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
-
-warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1049:34
-     |
-1049 | ...                   |chunk| {}
-     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
-warning: unused variable: `chunk`
-   --> src\overlay\process.rs:960:22
-    |
-960 |                     |chunk| { 
-    |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
-warning: unused variable: `overlay_hwnd`
-   --> src\overlay\process.rs:853:5
-    |
-853 |     overlay_hwnd: HWND,
-    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
-
-warning: unused variable: `ui_language`
-   --> src\overlay\process.rs:885:40
-    |
-885 |     let (groq_api_key, gemini_api_key, ui_language) = {
-    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
-
-warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1215:26
-     |
-1215 |                         |chunk| {}
-     |                          ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
-
-warning: unused variable: `error_msg`
-  --> src\main.rs:74:13
-   |
-74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
-
-Some errors have detailed explanations: E0282, E0432, E0599.
-For more information about an error, try `rustc --explain E0282`.
-warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 9 previous errors; 18 warnings emitted
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 2 previous errors
