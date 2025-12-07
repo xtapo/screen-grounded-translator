@@ -36,6 +36,8 @@ pub struct Preset {
     pub audio_source: String, // "mic" or "device"
     #[serde(default)]
     pub hide_recording_ui: bool,
+    #[serde(default)]
+    pub live_mode: bool, // "Chế độ hội thoại"
 
     // --- Video Fields ---
     #[serde(default)]
@@ -69,6 +71,7 @@ impl Default for Preset {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         }
@@ -112,6 +115,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -139,6 +143,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -163,6 +168,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -187,6 +193,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -214,6 +221,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -241,6 +249,7 @@ pub struct Config {
             preset_type: "image".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -256,7 +265,7 @@ pub struct Config {
             streaming_enabled: false,
             auto_copy: false,
             hotkeys: vec![],
-            retranslate: false,
+            retranslate: true,
             retranslate_to: default_lang.clone(),
             retranslate_model: "fast_text".to_string(),
             retranslate_streaming_enabled: true,
@@ -265,6 +274,7 @@ pub struct Config {
             preset_type: "audio".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -289,6 +299,7 @@ pub struct Config {
             preset_type: "audio".to_string(),
             audio_source: "device".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -313,6 +324,7 @@ pub struct Config {
             preset_type: "audio".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -340,6 +352,7 @@ pub struct Config {
             preset_type: "audio".to_string(),
             audio_source: "mic".to_string(),
             hide_recording_ui: false,
+            live_mode: false,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
         };
@@ -366,6 +379,7 @@ pub struct Config {
             hide_recording_ui: false,
             video_capture_method: "region".to_string(),
             is_upcoming: true, // Mark as upcoming to gray out in sidebar
+            live_mode: false,
         };
 
         Self {
@@ -425,4 +439,3 @@ lazy_static::lazy_static! {
 pub fn get_all_languages() -> &'static Vec<String> {
     &ALL_LANGUAGES
 }
-

@@ -1,0 +1,123 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+error[E0062]: field `hide_recording_ui` specified more than once
+  --> src\config.rs:74:13
+   |
+73 |             hide_recording_ui: false,
+   |             ------------------------ first use of `hide_recording_ui`
+74 |             hide_recording_ui: false,
+   |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0063]: missing fields `is_upcoming` and `video_capture_method` in initializer of `Preset`
+  --> src\config.rs:98:28
+   |
+98 |         let trans_preset = Preset {
+   |                            ^^^^^^ missing `is_upcoming` and `video_capture_method`
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:143:13
+    |
+142 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+143 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:167:13
+    |
+166 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+167 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:191:13
+    |
+190 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+191 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:218:13
+    |
+217 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+218 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:245:13
+    |
+244 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+245 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:269:13
+    |
+268 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+269 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:293:13
+    |
+292 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+293 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:317:13
+    |
+316 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+317 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:344:13
+    |
+343 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+344 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:368:13
+    |
+367 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+368 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `error_msg`
+  --> src\main.rs:72:13
+   |
+72 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+
+Some errors have detailed explanations: E0062, E0063.
+For more information about an error, try `rustc --explain E0062`.
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 3 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 12 previous errors; 3 warnings emitted

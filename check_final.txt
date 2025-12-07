@@ -1,0 +1,155 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+error[E0597]: `wav_cursor` does not live long enough
+   --> src\api.rs:844:59
+    |
+843 |             let mut wav_cursor = Cursor::new(Vec::new());
+    |                 -------------- binding `wav_cursor` declared here
+844 |             if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+    |                                     ----------------------^^^^^^^^^^^^^^^-------
+    |                                     |                     |
+    |                                     |                     borrowed value does not live long enough
+    |                                     a temporary with access to the borrow is created here ...
+...
+849 |         }
+    |         -
+    |         |
+    |         `wav_cursor` dropped here while still borrowed
+    |         ... and the borrow might be used here, when that temporary is dropped and runs the destructor for type `Result<WavWriter<&mut std::io::Cursor<std::vec::Vec<u8>>>, hound::Error>`
+    |
+help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
+    |
+848 |             };
+    |              +
+
+error[E0505]: cannot move out of `wav_cursor` because it is borrowed
+   --> src\api.rs:847:41
+    |
+843 |             let mut wav_cursor = Cursor::new(Vec::new());
+    |                 -------------- binding `wav_cursor` declared here
+844 |             if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+    |                                     --------------------------------------------
+    |                                     |                     |
+    |                                     |                     borrow of `wav_cursor` occurs here
+    |                                     a temporary with access to the borrow is created here ...
+...
+847 |                 let _ = session.tx.send(wav_cursor.into_inner());
+    |                                         ^^^^^^^^^^ move out of `wav_cursor` occurs here
+848 |             }
+849 |         }
+    |         - ... and the borrow might be used here, when that temporary is dropped and runs the destructor for type `Result<WavWriter<&mut std::io::Cursor<std::vec::Vec<u8>>>, hound::Error>`
+    |
+help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
+    |
+848 |             };
+    |              +
+help: consider cloning the value if the performance cost is acceptable
+    |
+844 |             if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor.clone(), spec) {
+    |                                                                          ++++++++
+
+error[E0597]: `wav_cursor` does not live long enough
+   --> src\api.rs:873:55
+    |
+872 |         let mut wav_cursor = Cursor::new(Vec::new());
+    |             -------------- binding `wav_cursor` declared here
+873 |         if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+    |                                 ----------------------^^^^^^^^^^^^^^^-------
+    |                                 |                     |
+    |                                 |                     borrowed value does not live long enough
+    |                                 a temporary with access to the borrow is created here ...
+...
+878 |     }
+    |     -
+    |     |
+    |     `wav_cursor` dropped here while still borrowed
+    |     ... and the borrow might be used here, when that temporary is dropped and runs the destructor for type `Result<WavWriter<&mut std::io::Cursor<std::vec::Vec<u8>>>, hound::Error>`
+    |
+help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
+    |
+877 |         };
+    |          +
+
+error[E0505]: cannot move out of `wav_cursor` because it is borrowed
+   --> src\api.rs:876:37
+    |
+872 |         let mut wav_cursor = Cursor::new(Vec::new());
+    |             -------------- binding `wav_cursor` declared here
+873 |         if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+    |                                 --------------------------------------------
+    |                                 |                     |
+    |                                 |                     borrow of `wav_cursor` occurs here
+    |                                 a temporary with access to the borrow is created here ...
+...
+876 |             let _ = session.tx.send(wav_cursor.into_inner());
+    |                                     ^^^^^^^^^^ move out of `wav_cursor` occurs here
+877 |         }
+878 |     }
+    |     - ... and the borrow might be used here, when that temporary is dropped and runs the destructor for type `Result<WavWriter<&mut std::io::Cursor<std::vec::Vec<u8>>>, hound::Error>`
+    |
+help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
+    |
+877 |         };
+    |          +
+help: consider cloning the value if the performance cost is acceptable
+    |
+873 |         if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor.clone(), spec) {
+    |                                                                      ++++++++
+
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:784:34
+    |
+784 | ...                   |chunk| {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:737:30
+    |
+737 | ...                   |chunk| { 
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:645:5
+    |
+645 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:677:40
+    |
+677 |     let (groq_api_key, gemini_api_key, ui_language) = {
+    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: unused variable: `streaming_enabled`
+   --> src\overlay\process.rs:689:9
+    |
+689 |     let streaming_enabled = preset.streaming_enabled;
+    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
+
+warning: unused variable: `error_msg`
+  --> src\main.rs:72:13
+   |
+72 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+
+Some errors have detailed explanations: E0505, E0597.
+For more information about an error, try `rustc --explain E0505`.
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 8 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 4 previous errors; 8 warnings emitted

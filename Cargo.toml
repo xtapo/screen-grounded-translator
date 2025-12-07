@@ -26,6 +26,8 @@ open = "5.0"
 sys-locale = "0.3"
 winreg = "0.50"
 auto-launch = "0.5"
+log = "0.4"
+simplelog = "0.12"
 
 # Language Data (Kept as requested)
 isolang = { version = "2.0", features = ["serde", "english_names"] }

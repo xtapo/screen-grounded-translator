@@ -53,8 +53,30 @@ lazy_static! {
 }
 
 fn main() -> eframe::Result<()> {
+    // --- LOGGING INIT ---
+    if let Some(config_dir) = dirs::config_dir() {
+        let app_dir = config_dir.join("xt-screen-translator");
+        let _ = std::fs::create_dir_all(&app_dir);
+        let log_file = app_dir.join("app.log");
+        
+        let _ = simplelog::WriteLogger::init(
+            simplelog::LevelFilter::Info,
+            simplelog::Config::default(),
+            std::fs::File::create(log_file).unwrap_or_else(|_| std::fs::File::create("app.log").unwrap())
+        );
+    }
+    log::info!("Application starting...");
+
     // --- CRASH HANDLER START ---
     panic::set_hook(Box::new(|panic_info| {
+        let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            format!("{}", s)
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            format!("{}", s)
+        } else {
+            "Unknown panic".to_string()
+        };
+
         // 1. Format the error message
         let location = if let Some(location) = panic_info.location() {
             format!("File: {}\nLine: {}", location.file(), location.line())
@@ -71,10 +93,12 @@ fn main() -> eframe::Result<()> {
         };
 
         let error_msg = format!("CRASH DETECTED!\n\nError: {}\n\nLocation:\n{}", payload, location);
+        
+        log::error!("{}", error_msg);
 
         // Show a Windows Message Box so the user knows it crashed
         let wide_msg: Vec<u16> = error_msg.encode_utf16().chain(std::iter::once(0)).collect();
-        let wide_title: Vec<u16> = "SGT Crash Report".encode_utf16().chain(std::iter::once(0)).collect();
+        let wide_title: Vec<u16> = "XT Screen Translator Crash Report".encode_utf16().chain(std::iter::once(0)).collect();
 
         unsafe {
             MessageBoxW(

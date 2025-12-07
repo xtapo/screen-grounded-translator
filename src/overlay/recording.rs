@@ -99,13 +99,23 @@ pub fn show_recording_overlay(preset_idx: usize) {
 
         std::thread::spawn(move || {
             // FIX: Pass AUDIO_ABORT_SIGNAL to the worker thread
-            crate::api::record_audio_and_transcribe(
-                preset, 
-                AUDIO_STOP_SIGNAL.clone(), 
-                AUDIO_PAUSE_SIGNAL.clone(), 
-                AUDIO_ABORT_SIGNAL.clone(),
-                hwnd
-            );
+            if preset.live_mode {
+                crate::api::record_audio_continuous(
+                    preset, 
+                    AUDIO_STOP_SIGNAL.clone(), 
+                    AUDIO_PAUSE_SIGNAL.clone(), 
+                    AUDIO_ABORT_SIGNAL.clone(),
+                    hwnd
+                );
+            } else {
+                crate::api::record_audio_and_transcribe(
+                    preset, 
+                    AUDIO_STOP_SIGNAL.clone(), 
+                    AUDIO_PAUSE_SIGNAL.clone(), 
+                    AUDIO_ABORT_SIGNAL.clone(),
+                    hwnd
+                );
+            }
         });
 
         let mut msg = MSG::default();

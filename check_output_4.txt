@@ -1,0 +1,87 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:788:34
+    |
+788 | ...                   |chunk| {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:741:30
+    |
+741 | ...                   |chunk| { 
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:677:40
+    |
+677 |     let (groq_api_key, gemini_api_key, ui_language) = {
+    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: unused variable: `streaming_enabled`
+   --> src\overlay\process.rs:689:9
+    |
+689 |     let streaming_enabled = preset.streaming_enabled;
+    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
+
+warning: unused variable: `error_msg`
+  --> src\main.rs:72:13
+   |
+72 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+
+warning: struct `GdiObj` is never constructed
+  --> src\overlay\result\paint.rs:10:8
+   |
+10 | struct GdiObj(HGDIOBJ);
+   |        ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated functions `from_hpen` and `from_hbrush` are never used
+  --> src\overlay\result\paint.rs:12:8
+   |
+11 | impl GdiObj {
+   | ----------- associated functions in this implementation
+12 |     fn from_hpen(pen: HPEN) -> Self { GdiObj(HGDIOBJ(pen.0)) }
+   |        ^^^^^^^^^
+13 |     fn from_hbrush(brush: HBRUSH) -> Self { GdiObj(HGDIOBJ(brush.0)) }
+   |        ^^^^^^^^^^^
+
+warning: function `show_audio_result` is never used
+   --> src\overlay\process.rs:280:8
+    |
+280 | pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT, retrans_rect: Option<RECT>) {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `LiveSession` is never constructed
+   --> src\overlay\process.rs:639:12
+    |
+639 | pub struct LiveSession {
+    |            ^^^^^^^^^^^
+
+warning: function `start_live_translation_session` is never used
+   --> src\overlay\process.rs:643:8
+    |
+643 | pub fn start_live_translation_session(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 12 warnings (run `cargo fix --bin "xt-screen-translator" -p xt-screen-translator` to apply 7 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.05s

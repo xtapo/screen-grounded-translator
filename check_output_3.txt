@@ -1,0 +1,195 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+error[E0063]: missing fields `is_upcoming` and `video_capture_method` in initializer of `Preset`
+  --> src\config.rs:99:28
+   |
+99 |         let trans_preset = Preset {
+   |                            ^^^^^^ missing `is_upcoming` and `video_capture_method`
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:144:13
+    |
+143 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+144 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:146:13
+    |
+145 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+146 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:169:13
+    |
+168 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+169 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:171:13
+    |
+170 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+171 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:194:13
+    |
+193 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+194 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:196:13
+    |
+195 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+196 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:222:13
+    |
+221 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+222 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:224:13
+    |
+223 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+224 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:250:13
+    |
+249 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+250 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:252:13
+    |
+251 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+252 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:275:13
+    |
+274 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+275 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:277:13
+    |
+276 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+277 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:300:13
+    |
+299 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+300 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:302:13
+    |
+301 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+302 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:325:13
+    |
+324 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+325 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:327:13
+    |
+326 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+327 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:353:13
+    |
+352 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+353 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:355:13
+    |
+354 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+355 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+error[E0062]: field `hide_recording_ui` specified more than once
+   --> src\config.rs:378:13
+    |
+377 |             hide_recording_ui: false,
+    |             ------------------------ first use of `hide_recording_ui`
+378 |             hide_recording_ui: false,
+    |             ^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `live_mode` specified more than once
+   --> src\config.rs:380:13
+    |
+379 |             live_mode: false,
+    |             ---------------- first use of `live_mode`
+380 |             live_mode: false,
+    |             ^^^^^^^^^ used more than once
+
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `error_msg`
+  --> src\main.rs:72:13
+   |
+72 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+
+Some errors have detailed explanations: E0062, E0063.
+For more information about an error, try `rustc --explain E0062`.
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 3 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 21 previous errors; 3 warnings emitted

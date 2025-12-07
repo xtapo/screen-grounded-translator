@@ -8,7 +8,7 @@ use windows::Win32::Foundation::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crate::config::Preset;
-use crate::model_config::get_model_by_id;
+
 use crate::APP;
 
 #[derive(Serialize, Deserialize)]
@@ -62,6 +62,8 @@ pub fn translate_image_streaming<F>(
 where
     F: FnMut(&str),
 {
+    log::info!("Starting image translation. Provider: {}, Model: {}, Stream: {}", provider, model, streaming_enabled);
+
     // FIX 6: Resize image if too large to save bandwidth
     let processed_image = if image.width() > 1920 {
         let ratio = 1920.0 / image.width() as f32;
@@ -304,6 +306,7 @@ pub fn translate_text_streaming<F>(
 where
     F: FnMut(&str),
 {
+    log::info!("Starting text translation. Provider: {}, Model: {}, Target: {}", provider, model, target_lang);
     let mut full_content = String::new();
     let prompt = format!(
         "Translate the following text to {}. Output ONLY the translation. Text:\n\n{}",
@@ -579,6 +582,7 @@ pub fn record_audio_and_transcribe(
     abort_signal: Arc<AtomicBool>,
     overlay_hwnd: HWND
 ) {
+    log::info!("Starting audio recording. Source: {}", preset.audio_source);
     // FIX 5: Host Selection (WASAPI for loopback, default for mic)
     #[cfg(target_os = "windows")]
     let host = if preset.audio_source == "device" {
@@ -737,94 +741,164 @@ pub fn record_audio_and_transcribe(
     }
     let wav_data = wav_cursor.into_inner();
     
-    // Determine API endpoint, model, and provider
-    let model_config = get_model_by_id(&preset.model);
-    let model_config = model_config.expect("Model config not found for preset model");
-    let model_name = model_config.full_name.clone();
-    let provider = model_config.provider.clone();
-    
-    // Get API keys from config
-    let (groq_api_key, gemini_api_key) = {
-        let app = crate::APP.lock().unwrap();
-        (app.config.api_key.clone(), app.config.gemini_api_key.clone())
+    // Delegate processing to overlay module (handles streaming UI)
+    crate::overlay::process::process_audio_post_record(preset, wav_data, overlay_hwnd);
+}
+
+pub fn record_audio_continuous(
+    preset: crate::config::Preset,
+    stop_signal: Arc<AtomicBool>,
+    pause_signal: Arc<AtomicBool>,
+    abort_signal: Arc<AtomicBool>,
+    overlay_hwnd: HWND,
+) {
+    let host = cpal::default_host();
+    let device = if preset.audio_source == "device" {
+        #[cfg(target_os = "windows")]
+        {
+            match host.default_output_device() {
+                Some(d) => d,
+                None => host.default_input_device().expect("No input device available")
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        host.default_input_device().expect("No input device available")
+    } else {
+        host.default_input_device().expect("No input device available")
     };
 
-    // Prepare Prompt - replace all {languageN} with actual languages (same as image processing flow)
-    let mut final_prompt = preset.prompt.clone();
-    
-    // Replace numbered language tags
-    for (key, value) in &preset.language_vars {
-        let pattern = format!("{{{}}}", key); // e.g., "{language1}"
-        final_prompt = final_prompt.replace(&pattern, value);
-    }
-    
-    // Backward compatibility: also replace old {language} tag
-    final_prompt = final_prompt.replace("{language}", &preset.selected_language);
-    
-    // --- LOGIC SPLIT: Groq (Whisper API) vs Google (Multimodal Chat API) ---
-    let transcription_result = if provider == "groq" {
-        if groq_api_key.trim().is_empty() {
-            Err(anyhow::anyhow!("NO_API_KEY"))
-        } else {
-            upload_audio_to_whisper(&groq_api_key, &model_name, wav_data)
-        }
-    } else if provider == "google" {
-        // Must use the multimodal approach
-        if gemini_api_key.trim().is_empty() {
-            Err(anyhow::anyhow!("NO_API_KEY"))
-        } else {
-            // Pass the prompt for Gemini models with variable substitution applied
-            transcribe_audio_gemini(&gemini_api_key, final_prompt, model_name, wav_data, |_| {})
+    let config = if preset.audio_source == "device" {
+        match device.default_output_config() {
+            Ok(c) => c,
+            Err(_) => device.default_input_config().expect("Failed to get audio config")
         }
     } else {
-        Err(anyhow::anyhow!("Unsupported audio provider: {}", provider))
+        device.default_input_config().expect("Failed to get audio config")
     };
+
+    let sample_rate = config.sample_rate().0;
+    let channels = config.channels();
+    let spec = hound::WavSpec {
+        channels,
+        sample_rate,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+
+    let (tx, rx) = mpsc::channel::<Vec<f32>>();
     
-    // Handle Result showing
+    // Start the persistent result session
+    let session = crate::overlay::process::start_live_translation_session(preset.clone(), overlay_hwnd);
+
+    let err_fn = |err| eprintln!("Audio stream error: {}", err);
+    let stream_res = match config.sample_format() {
+        cpal::SampleFormat::F32 => device.build_input_stream(
+            &config.into(),
+            move |data: &[f32], _: &_| {
+                if !pause_signal.load(Ordering::Relaxed) {
+                    let _ = tx.send(data.to_vec());
+                }
+            },
+            err_fn,
+            None
+        ),
+        cpal::SampleFormat::I16 => device.build_input_stream(
+            &config.into(),
+            move |data: &[i16], _: &_| {
+                if !pause_signal.load(Ordering::Relaxed) {
+                    let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / i16::MAX as f32).collect();
+                    let _ = tx.send(f32_data);
+                }
+            },
+            err_fn,
+            None
+        ),
+        _ => return,
+    };
+
+    if let Err(e) = stream_res {
+        eprintln!("Failed to build stream: {}", e);
+        return;
+    }
+    let stream = stream_res.unwrap();
+    stream.play().expect("Failed to start audio stream");
+
+    let mut collected_samples: Vec<f32> = Vec::new();
+    let chunk_duration_samples = (sample_rate as usize) * 5; // 5 seconds chunks
+
+    while !stop_signal.load(Ordering::SeqCst) {
+        // Drain incoming audio to buffer
+        while let Ok(chunk) = rx.try_recv() {
+            collected_samples.extend(chunk);
+        }
+
+        // Process full chunks
+        while collected_samples.len() >= chunk_duration_samples {
+            let chunk: Vec<f32> = collected_samples.drain(0..chunk_duration_samples).collect();
+            
+            let samples: Vec<i16> = chunk.iter()
+                .map(|&s| (s.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)
+                .collect();
+            
+            let mut wav_cursor = Cursor::new(Vec::new());
+            let success = {
+                if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+                    for sample in samples { let _ = writer.write_sample(sample); }
+                    let _ = writer.finalize();
+                    true
+                } else {
+                    false
+                }
+            };
+            if success {
+                let _ = session.tx.send(wav_cursor.into_inner());
+            }
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        
+        // Abort check
+        if abort_signal.load(Ordering::SeqCst) {
+            break;
+        }
+        if !preset.hide_recording_ui && !unsafe { IsWindow(overlay_hwnd).as_bool() } {
+            break;
+        }
+    }
+
+    drop(stream);
+
+    // Process remaining partial chunk if it has meaningful data (> 1 second)
+    while let Ok(chunk) = rx.try_recv() {
+        collected_samples.extend(chunk);
+    }
+    if collected_samples.len() > sample_rate as usize {
+        let samples: Vec<i16> = collected_samples.iter()
+            .map(|&s| (s.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)
+            .collect();
+        let mut wav_cursor = Cursor::new(Vec::new());
+        let success = {
+            if let Ok(mut writer) = hound::WavWriter::new(&mut wav_cursor, spec) {
+                for sample in samples { let _ = writer.write_sample(sample); }
+                let _ = writer.finalize();
+                true
+            } else {
+                false
+            }
+        };
+        if success {
+            let _ = session.tx.send(wav_cursor.into_inner());
+        }
+    }
+
     unsafe {
-        // If hidden UI, we can't post message to it to close itself, but it might not exist.
         if IsWindow(overlay_hwnd).as_bool() {
              PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
         }
     }
-
-    match transcription_result {
-        Ok(transcription_text) => {
-            let screen_w = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-            let screen_h = unsafe { GetSystemMetrics(SM_CYSCREEN) };
-            
-            // Logic to position windows based on retranslate need
-            let (rect, retranslate_rect) = if preset.retranslate {
-                // Split screen
-                let w = 600;
-                let h = 300;
-                let gap = 20;
-                let total_w = w * 2 + gap;
-                let start_x = (screen_w - total_w) / 2;
-                let y = (screen_h - h) / 2;
-                
-                (
-                    RECT { left: start_x, top: y, right: start_x + w, bottom: y + h },
-                    Some(RECT { left: start_x + w + gap, top: y, right: start_x + w + gap + w, bottom: y + h })
-                )
-            } else {
-                // Center
-                let w = 700;
-                let h = 300;
-                let x = (screen_w - w) / 2;
-                let y = (screen_h - h) / 2;
-                (RECT { left: x, top: y, right: x + w, bottom: y + h }, None)
-            };
-
-            crate::overlay::process::show_audio_result(preset, transcription_text, rect, retranslate_rect);
-        },
-        Err(e) => {
-            eprintln!("Transcription error: {}", e);
-        }
-    }
 }
 
-fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) -> anyhow::Result<String> {
+pub fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) -> anyhow::Result<String> {
     // Create multipart form data
     let boundary = format!("----SGTBoundary{}", std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

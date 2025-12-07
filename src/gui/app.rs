@@ -974,6 +974,10 @@ impl eframe::App for SettingsApp {
                                         if ui.checkbox(&mut preset.hide_recording_ui, text.hide_recording_ui_label).clicked() {
                                             preset_changed = true;
                                         }
+                                        // NEW: Live Mode Checkbox
+                                        if ui.checkbox(&mut preset.live_mode, "Chế độ hội thoại (Live)").on_hover_text("Ghi âm và dịch liên tục (Beta)").clicked() {
+                                            preset_changed = true;
+                                        }
                                     });
                                 });
                             }
