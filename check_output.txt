@@ -1,27 +1,136 @@
+    Updating crates.io index
+     Locking 9 packages to latest compatible versions
+      Adding android_system_properties v0.1.5
+      Adding chrono v0.4.42
+      Adding iana-time-zone v0.1.64
+      Adding iana-time-zone-haiku v0.1.2
+      Adding windows-core v0.62.2
+      Adding windows-implement v0.60.2
+      Adding windows-interface v0.59.3
+      Adding windows-result v0.4.1
+      Adding windows-strings v0.5.1
    Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
-error[E0603]: function `upload_audio_to_whisper` is private
-   --> src\overlay\process.rs:6:107
+    Checking chrono v0.4.42
+warning: unused import: `Mutex`
+ --> src\api.rs:6:22
+  |
+6 | use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc};
+  |                      ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\overlay\assistant_overlay.rs:4:5
+  |
+4 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `AtomicBool` and `Ordering`
+ --> src\overlay\assistant_overlay.rs:8:25
+  |
+8 | use std::sync::atomic::{AtomicBool, Ordering};
+  |                         ^^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `windows::Win32::Foundation::*`
+ --> src\capture.rs:2:5
+  |
+2 | use windows::Win32::Foundation::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::api::translate_text_streaming`
+ --> src\assistant.rs:3:5
+  |
+3 | use crate::api::translate_text_streaming;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ImageBuffer` and `Rgba`
+ --> src\assistant.rs:6:13
+  |
+6 | use image::{ImageBuffer, Rgba};
+  |             ^^^^^^^^^^^  ^^^^
+
+warning: unused imports: `DateTime` and `Local`
+ --> src\assistant.rs:7:14
+  |
+7 | use chrono::{DateTime, Local};
+  |              ^^^^^^^^  ^^^^^
+
+warning: unused import: `windows::Win32::Graphics::Gdi::*`
+  --> src\main.rs:20:5
+   |
+20 | use windows::Win32::Graphics::Gdi::*;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0061]: this function takes 1 argument but 0 arguments were supplied
+   --> src\gui\app.rs:275:52
     |
-  6 | use crate::{AppState, api::{translate_image_streaming, translate_text_streaming, transcribe_audio_gemini, upload_audio_to_whisper}};
-    |                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^ private function
+275 |             assistant_history: Arc::new(Mutex::new(crate::assistant::ConversationHistory::new())),
+    |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-- argument #1 of type `usize` is missing
     |
-note: the function `upload_audio_to_whisper` is defined here
-   --> src\api.rs:748:1
+note: associated function defined here
+   --> src\assistant.rs:31:12
     |
-748 | fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) -> anyhow::Result<String> {
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 31 |     pub fn new(max_messages: usize) -> Self {
+    |            ^^^ -------------------
+help: provide the argument
+    |
+275 |             assistant_history: Arc::new(Mutex::new(crate::assistant::ConversationHistory::new(/* usize */))),
+    |                                                                                               +++++++++++
+
+error[E0599]: no method named `auto_scroll` found for struct `ScrollArea` in the current scope
+    --> src\gui\app.rs:1601:37
+     |
+1600 | / ...                   egui::ScrollArea::vertical()
+1601 | | ...                      .auto_scroll([false, true])
+     | |__________________________-^^^^^^^^^^^
+     |
+help: there is a method `drag_to_scroll` with a similar name
+     |
+1601 -                                    .auto_scroll([false, true])
+1601 +                                    .drag_to_scroll([false, true])
+     |
 
 error[E0282]: type annotations needed
-   --> src\overlay\process.rs:524:26
-    |
-524 |                     *t = full_text.clone(); 
-    |                          ^^^^^^^^^ cannot infer type
+    --> src\gui\app.rs:1604:47
+     |
+1604 | ...                   .show(ui, |ui| {
+     |                                  ^^
+...
+1617 | ...                            ui.with_layout(egui::Layout::top_down(align), |ui| {
+     |                                -- type must be known at this point
+     |
+help: consider giving this closure parameter an explicit type
+     |
+1604 |                                    .show(ui, |ui: /* Type */| {
+     |                                                 ++++++++++++
 
 error[E0282]: type annotations needed
-   --> src\overlay\process.rs:621:57
-    |
-621 |                      let error_msg = get_error_message(&e.to_string(), &ui_language);
-    |                                                         ^ cannot infer type
+    --> src\gui\app.rs:1617:92
+     |
+1617 | ...                   ui.with_layout(egui::Layout::top_down(align), |ui| {
+     |                                                                      ^^
+...
+1623 | ...                       let text_color = if is_user { egui::Color32::WHITE } else { ui.visuals().text_color() };
+     |                                                                                       -- type must be known at this point
+     |
+help: consider giving this closure parameter an explicit type
+     |
+1617 |                                             ui.with_layout(egui::Layout::top_down(align), |ui: /* Type */| {
+     |                                                                                              ++++++++++++
+
+error[E0063]: missing field `max_messages` in initializer of `ConversationHistory`
+    --> src\gui\app.rs:1693:62
+     |
+1693 | ...                   let temp_h = crate::assistant::ConversationHistory { messages: history_snap };
+     |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `max_messages`
+
+warning: unused variable: `overlay_hwnd`
+    --> src\api.rs:1093:5
+     |
+1093 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
+     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
 warning: variable does not need to be mutable
    --> src\overlay\result\mod.rs:231:17
@@ -38,16 +147,91 @@ warning: unused variable: `show_system_cursor`
     |
 231 |             let mut show_system_cursor = false;
     |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+
+warning: unused variable: `text_res`
+   --> src\overlay\process.rs:584:33
     |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+584 | ...                   let text_res = translate_text_streaming(
+    |                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_res`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:823:34
+    |
+823 | ...                   |chunk| {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:650:5
+    |
+650 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:682:60
+    |
+682 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: unused variable: `streaming_enabled`
+   --> src\overlay\process.rs:694:9
+    |
+694 |     let streaming_enabled = preset.streaming_enabled;
+    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
+
+warning: unused variable: `chunk`
+    --> src\overlay\process.rs:1073:34
+     |
+1073 | ...                   |chunk| {}
+     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:983:22
+    |
+983 |                     |chunk| { 
+    |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:872:5
+    |
+872 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:904:60
+    |
+904 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: value assigned to `*self.is_generating` is never read
+   --> src\overlay\assistant_overlay.rs:149:25
+    |
+149 |                         self.is_generating = true; // Local UI state
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> src\assistant.rs:89:5
+   |
+89 |     mut on_chunk: F,
+   |     ----^^^^^^^^
+   |     |
+   |     help: remove this `mut`
+
+warning: unused variable: `clipboard_context`
+  --> src\assistant.rs:88:5
+   |
+88 |     clipboard_context: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_clipboard_context`
 
 warning: unused variable: `error_msg`
-  --> src\main.rs:72:13
+  --> src\main.rs:78:13
    |
-72 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+78 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0603.
-For more information about an error, try `rustc --explain E0282`.
-warning: `xt-screen-translator` (bin "xt-screen-translator") generated 3 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 3 previous errors; 3 warnings emitted
+Some errors have detailed explanations: E0061, E0063, E0282, E0599.
+For more information about an error, try `rustc --explain E0061`.
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 24 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 5 previous errors; 24 warnings emitted

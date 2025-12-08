@@ -67,6 +67,13 @@ pub struct LocaleText {
      pub live_captions_sentences: &'static str,
      pub live_captions_show_original: &'static str,
      pub live_captions_auto_hide: &'static str,
+     // Assistant
+     pub assistant_title: &'static str,
+     pub assistant_input_placeholder: &'static str,
+     pub assistant_send: &'static str,
+     pub assistant_context_clipboard: &'static str,
+     pub assistant_context_screen: &'static str,
+     pub assistant_clear_history: &'static str,
      }
 
 impl LocaleText {
@@ -138,6 +145,13 @@ impl LocaleText {
                 live_captions_sentences: "Số câu hiển thị:",
                 live_captions_show_original: "Hiển thị gốc",
                 live_captions_auto_hide: "Tự ẩn Live Captions",
+                // Assistant
+                assistant_title: "Trợ lý AI",
+                assistant_input_placeholder: "Nhập tin nhắn...",
+                assistant_send: "Gửi",
+                assistant_context_clipboard: "Đính kèm Clipboard",
+                assistant_context_screen: "Đính kèm Ảnh màn hình",
+                assistant_clear_history: "Xóa lịch sử",
                 },
             "ko" => Self {
                 api_section: "전역 설정",
@@ -205,6 +219,13 @@ impl LocaleText {
                 live_captions_sentences: "표시할 문장 수:",
                 live_captions_show_original: "원문 표시",
                 live_captions_auto_hide: "Live Captions 자동 숨기기",
+                // Assistant
+                assistant_title: "AI 어시스턴트",
+                assistant_input_placeholder: "메시지를 입력하세요...",
+                assistant_send: "보내기",
+                assistant_context_clipboard: "클립보드 첨부",
+                assistant_context_screen: "스크린샷 첨부",
+                assistant_clear_history: "기록 삭제",
                 },
             _ => Self {
                 api_section: "Global Settings",
@@ -272,6 +293,13 @@ impl LocaleText {
                 live_captions_sentences: "Lines to display:",
                 live_captions_show_original: "Show Original",
                 live_captions_auto_hide: "Auto-hide Live Captions",
+                // Assistant
+                assistant_title: "AI Assistant",
+                assistant_input_placeholder: "Type your message...",
+                assistant_send: "Send",
+                assistant_context_clipboard: "Attach Clipboard",
+                assistant_context_screen: "Attach Screenshot",
+                assistant_clear_history: "Clear History",
                 },
                 }
                 }

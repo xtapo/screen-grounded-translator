@@ -1,9 +1,10 @@
 mod utils;
 mod selection;
 mod result;
-pub mod recording; 
+pub mod recording;
 pub mod process;
 pub mod broom_assets;
+pub mod assistant_overlay;
 pub mod paint_utils;
 pub mod live_captions;
 

@@ -1,0 +1,414 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+error[E0432]: unresolved import `chrono`
+ --> src\assistant.rs:7:5
+  |
+7 | use chrono::{DateTime, Local};
+  |     ^^^^^^ use of unresolved module or unlinked crate `chrono`
+  |
+  = help: if you wanted to use a crate named `chrono`, use `cargo add chrono` to add it to your `Cargo.toml`
+
+error: cannot find attribute `serde` in this scope
+   --> src\config.rs:149:7
+    |
+149 |     #[serde(default)]
+    |       ^^^^^
+    |
+    = note: `serde` is an attribute that can be used by the derive macros `Deserialize` and `Serialize`, you might be missing a `derive` attribute
+    = note: `serde` is in scope, but it is a crate, not an attribute
+
+error: cannot find attribute `serde` in this scope
+   --> src\config.rs:147:7
+    |
+147 |     #[serde(default)]
+    |       ^^^^^
+    |
+    = note: `serde` is an attribute that can be used by the derive macros `Deserialize` and `Serialize`, you might be missing a `derive` attribute
+    = note: `serde` is in scope, but it is a crate, not an attribute
+
+error: cannot find attribute `serde` in this scope
+   --> src\config.rs:141:7
+    |
+141 |     #[serde(default)]
+    |       ^^^^^
+    |
+    = note: `serde` is an attribute that can be used by the derive macros `Deserialize` and `Serialize`, you might be missing a `derive` attribute
+    = note: `serde` is in scope, but it is a crate, not an attribute
+
+error[E0425]: cannot find function `chat_streaming_raw` in module `crate::api`
+   --> src\assistant.rs:120:21
+    |
+120 |         crate::api::chat_streaming_raw(
+    |                     ^^^^^^^^^^^^^^^^^^ not found in `crate::api`
+
+warning: unused import: `Mutex`
+ --> src\api.rs:6:22
+  |
+6 | use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc};
+  |                      ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\overlay\assistant_overlay.rs:4:5
+  |
+4 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `AtomicBool` and `Ordering`
+ --> src\overlay\assistant_overlay.rs:8:25
+  |
+8 | use std::sync::atomic::{AtomicBool, Ordering};
+  |                         ^^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `windows::Win32::Foundation::*`
+ --> src\capture.rs:2:5
+  |
+2 | use windows::Win32::Foundation::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::api::translate_text_streaming`
+ --> src\assistant.rs:3:5
+  |
+3 | use crate::api::translate_text_streaming;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ImageBuffer` and `Rgba`
+ --> src\assistant.rs:6:13
+  |
+6 | use image::{ImageBuffer, Rgba};
+  |             ^^^^^^^^^^^  ^^^^
+
+warning: unused import: `windows::Win32::Graphics::Gdi::*`
+  --> src\main.rs:20:5
+   |
+20 | use windows::Win32::Graphics::Gdi::*;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `config::Config: serde::Deserialize<'de>` is not satisfied
+    --> src\config.rs:499:9
+     |
+ 499 |         serde_json::from_str(&data).unwrap_or_default()
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+     |
+help: the trait `Deserialize<'_>` is not implemented for `config::Config`
+    --> src\config.rs:138:1
+     |
+ 138 | pub struct Config {
+     | ^^^^^^^^^^^^^^^^^
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `config::Config` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Deserialize<'de>`:
+               &'a [u8]
+               &'a std::path::Path
+               &'a str
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+             and 175 others
+note: required by a bound in `serde_json::from_str`
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_json-1.0.145\src\de.rs:2699:8
+     |
+2697 | pub fn from_str<'a, T>(s: &'a str) -> Result<T>
+     |        -------- required by a bound in this function
+2698 | where
+2699 |     T: de::Deserialize<'a>,
+     |        ^^^^^^^^^^^^^^^^^^^ required by this bound in `from_str`
+
+error[E0277]: the trait bound `config::Config: serde::Serialize` is not satisfied
+    --> src\config.rs:507:45
+     |
+ 507 |     let data = serde_json::to_string_pretty(config).unwrap();
+     |                ---------------------------- ^^^^^^ unsatisfied trait bound
+     |                |
+     |                required by a bound introduced by this call
+     |
+help: the trait `Serialize` is not implemented for `config::Config`
+    --> src\config.rs:138:1
+     |
+ 138 | pub struct Config {
+     | ^^^^^^^^^^^^^^^^^
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `config::Config` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Serialize`:
+               &'a T
+               &'a mut T
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+               (T0, T1, T2, T3, T4)
+             and 159 others
+note: required by a bound in `to_string_pretty`
+    --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_json-1.0.145\src\ser.rs:2266:17
+     |
+2264 | pub fn to_string_pretty<T>(value: &T) -> Result<String>
+     |        ---------------- required by a bound in this function
+2265 | where
+2266 |     T: ?Sized + Serialize,
+     |                 ^^^^^^^^^ required by this bound in `to_string_pretty`
+
+error[E0599]: no method named `clone` found for struct `config::Config` in the current scope
+   --> src\gui\app.rs:292:36
+    |
+292 |         state.config = self.config.clone();
+    |                                    ^^^^^ method not found in `config::Config`
+    |
+   ::: src\config.rs:138:1
+    |
+138 | pub struct Config {
+    | ----------------- method `clone` not found for this struct
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+error[E0599]: no method named `auto_scroll` found for struct `ScrollArea` in the current scope
+    --> src\gui\app.rs:1601:37
+     |
+1600 | / ...                   egui::ScrollArea::vertical()
+1601 | | ...                      .auto_scroll([false, true])
+     | |__________________________-^^^^^^^^^^^
+     |
+help: there is a method `drag_to_scroll` with a similar name
+     |
+1601 -                                    .auto_scroll([false, true])
+1601 +                                    .drag_to_scroll([false, true])
+     |
+
+error[E0282]: type annotations needed
+    --> src\gui\app.rs:1604:47
+     |
+1604 | ...                   .show(ui, |ui| {
+     |                                  ^^
+...
+1617 | ...                            ui.with_layout(egui::Layout::top_down(align), |ui| {
+     |                                -- type must be known at this point
+     |
+help: consider giving this closure parameter an explicit type
+     |
+1604 |                                    .show(ui, |ui: /* Type */| {
+     |                                                 ++++++++++++
+
+error[E0282]: type annotations needed
+    --> src\gui\app.rs:1617:92
+     |
+1617 | ...                   ui.with_layout(egui::Layout::top_down(align), |ui| {
+     |                                                                      ^^
+...
+1623 | ...                       let text_color = if is_user { egui::Color32::WHITE } else { ui.visuals().text_color() };
+     |                                                                                       -- type must be known at this point
+     |
+help: consider giving this closure parameter an explicit type
+     |
+1617 |                                             ui.with_layout(egui::Layout::top_down(align), |ui: /* Type */| {
+     |                                                                                              ++++++++++++
+
+error[E0599]: no method named `clone` found for struct `config::Config` in the current scope
+    --> src\gui\app.rs:1664:76
+     |
+1664 | ...                   let config_clone = self.config.clone();
+     |                                                      ^^^^^ method not found in `config::Config`
+     |
+    ::: src\config.rs:138:1
+     |
+ 138 | pub struct Config {
+     | ----------------- method `clone` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is implemented and in scope
+     = note: the following trait defines an item `clone`, perhaps you need to implement it:
+             candidate #1: `Clone`
+
+error[E0599]: no method named `clone` found for struct `config::Config` in the current scope
+   --> src\overlay\process.rs:22:26
+    |
+ 22 |             guard.config.clone(),
+    |                          ^^^^^ method not found in `config::Config`
+    |
+   ::: src\config.rs:138:1
+    |
+138 | pub struct Config {
+    | ----------------- method `clone` not found for this struct
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+error[E0282]: type annotations needed
+  --> src\overlay\process.rs:48:17
+   |
+48 |     let img_w = img.width();
+   |                 ^^^ cannot infer type
+
+error[E0599]: no method named `dark_mode_color` found for struct `config::Config` in the current scope
+   --> src\overlay\assistant_overlay.rs:61:31
+    |
+ 61 |             .fill(self.config.dark_mode_color())
+    |                               ^^^^^^^^^^^^^^^ method not found in `config::Config`
+    |
+   ::: src\config.rs:138:1
+    |
+138 | pub struct Config {
+    | ----------------- method `dark_mode_color` not found for this struct
+
+error[E0599]: no method named `clone` found for struct `config::Config` in the current scope
+   --> src\overlay\assistant_overlay.rs:152:56
+    |
+152 |                         let config_clone = self.config.clone();
+    |                                                        ^^^^^ method not found in `config::Config`
+    |
+   ::: src\config.rs:138:1
+    |
+138 | pub struct Config {
+    | ----------------- method `clone` not found for this struct
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src\overlay\assistant_overlay.rs:217:14
+    |
+217 |             .with_always_on_top(true)
+    |              ^^^^^^^^^^^^^^^^^^ ---- unexpected argument of type `bool`
+    |
+note: method defined here
+   --> C:\Users\quang\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-0.26.2\src\viewport.rs:562:12
+    |
+562 |     pub fn with_always_on_top(self) -> Self {
+    |            ^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+217 -             .with_always_on_top(true)
+217 +             .with_always_on_top()
+    |
+
+error[E0599]: no method named `with_taskbar` found for struct `ViewportBuilder` in the current scope
+   --> src\overlay\assistant_overlay.rs:218:14
+    |
+214 |           viewport: eframe::egui::ViewportBuilder::default()
+    |  ___________________-
+215 | |             .with_decorations(false) // Frameless
+216 | |             .with_transparent(true)  // Transparent
+217 | |             .with_always_on_top(true)
+218 | |             .with_taskbar(false) 
+    | |             -^^^^^^^^^^^^ method not found in `ViewportBuilder`
+    | |_____________|
+    |
+
+error[E0061]: this function takes 0 arguments but 1 argument was supplied
+  --> src\main.rs:49:43
+   |
+49 |         let history = Arc::new(Mutex::new(assistant::ConversationHistory::new(config.assistant.max_history)));
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ---------------------------- unexpected argument of type `usize`
+   |
+note: associated function defined here
+  --> src\assistant.rs:31:12
+   |
+31 |     pub fn new() -> Self {
+   |            ^^^
+help: remove the extra argument
+   |
+49 -         let history = Arc::new(Mutex::new(assistant::ConversationHistory::new(config.assistant.max_history)));
+49 +         let history = Arc::new(Mutex::new(assistant::ConversationHistory::new()));
+   |
+
+error[E0599]: no method named `clone` found for struct `config::Config` in the current scope
+   --> src\main.rs:182:53
+    |
+182 |     let initial_config = APP.lock().unwrap().config.clone();
+    |                                                     ^^^^^ method not found in `config::Config`
+    |
+   ::: src\config.rs:138:1
+    |
+138 | pub struct Config {
+    | ----------------- method `clone` not found for this struct
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+warning: unused variable: `overlay_hwnd`
+    --> src\api.rs:1093:5
+     |
+1093 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
+     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+
+warning: unused variable: `text_res`
+   --> src\overlay\process.rs:584:33
+    |
+584 | ...                   let text_res = translate_text_streaming(
+    |                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_res`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:823:34
+    |
+823 | ...                   |chunk| {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:650:5
+    |
+650 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:682:60
+    |
+682 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: unused variable: `streaming_enabled`
+   --> src\overlay\process.rs:694:9
+    |
+694 |     let streaming_enabled = preset.streaming_enabled;
+    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
+
+warning: unused variable: `chunk`
+    --> src\overlay\process.rs:1073:34
+     |
+1073 | ...                   |chunk| {}
+     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:983:22
+    |
+983 |                     |chunk| { 
+    |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:872:5
+    |
+872 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:904:60
+    |
+904 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+Some errors have detailed explanations: E0061, E0277, E0282, E0425, E0432, E0599.
+For more information about an error, try `rustc --explain E0061`.
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 19 warnings
+error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 20 previous errors; 19 warnings emitted

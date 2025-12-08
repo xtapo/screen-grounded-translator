@@ -7,55 +7,74 @@ warning: unused import: `Mutex`
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\overlay\assistant_overlay.rs:4:5
+  |
+4 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `AtomicBool` and `Ordering`
+ --> src\overlay\assistant_overlay.rs:8:25
+  |
+8 | use std::sync::atomic::{AtomicBool, Ordering};
+  |                         ^^^^^^^^^^  ^^^^^^^^
+
 warning: unused import: `windows::Win32::Foundation::*`
  --> src\capture.rs:2:5
   |
 2 | use windows::Win32::Foundation::*;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: unused import: `windows::Win32::Foundation::*`
- --> src\uia.rs:3:5
+warning: unused import: `crate::api::translate_text_streaming`
+ --> src\assistant.rs:3:5
   |
-3 | use windows::Win32::Foundation::*;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 | use crate::api::translate_text_streaming;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ImageBuffer` and `Rgba`
+ --> src\assistant.rs:6:13
+  |
+6 | use image::{ImageBuffer, Rgba};
+  |             ^^^^^^^^^^^  ^^^^
+
+warning: unused imports: `DateTime` and `Local`
+ --> src\assistant.rs:7:14
+  |
+7 | use chrono::{DateTime, Local};
+  |              ^^^^^^^^  ^^^^^
 
 warning: unused import: `windows::Win32::Graphics::Gdi::*`
-  --> src\main.rs:19:5
+  --> src\main.rs:20:5
    |
-19 | use windows::Win32::Graphics::Gdi::*;
+20 | use windows::Win32::Graphics::Gdi::*;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:28:46
-   |
-28 |             if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_en) {
-   |                                              ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:29:33
-   |
-29 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
-
-error[E0599]: no method named `FindFirst` found for struct `windows::Win32::UI::Accessibility::IUIAutomation` in the current scope
-  --> src\uia.rs:38:47
-   |
-38 |              if let Ok(app_window) = self.uia.FindFirst(TreeScope_Children, &cond_and_vi) {
-   |                                               ^^^^^^^^^ method not found in `windows::Win32::UI::Accessibility::IUIAutomation`
-
-error[E0282]: type annotations needed
-  --> src\uia.rs:39:33
-   |
-39 |                  if let Ok(_) = app_window.CurrentName() {
-   |                                 ^^^^^^^^^^ cannot infer type
-
 warning: unused variable: `overlay_hwnd`
-   --> src\api.rs:908:5
+    --> src\api.rs:1093:5
+     |
+1093 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
+     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\gui\app.rs:881:45
     |
-908 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
-    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+881 | ...                   let mut models_for_text: Vec<_> = get_all_models()
+    |                           ----^^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
     |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `*self.assistant_generating` is never read
+    --> src\gui\app.rs:1661:45
+     |
+1661 | ...                   self.assistant_generating = true;
+     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
 
 warning: variable does not need to be mutable
    --> src\overlay\result\mod.rs:231:17
@@ -64,8 +83,6 @@ warning: variable does not need to be mutable
     |                 ----^^^^^^^^^^^^^^^^^^
     |                 |
     |                 help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
 warning: unused variable: `show_system_cursor`
    --> src\overlay\result\mod.rs:231:17
@@ -73,73 +90,150 @@ warning: unused variable: `show_system_cursor`
 231 |             let mut show_system_cursor = false;
     |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
 
-warning: unused variable: `chunk`
-   --> src\overlay\process.rs:804:34
+warning: unused variable: `text_res`
+   --> src\overlay\process.rs:584:33
     |
-804 | ...                   |chunk| {
-    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+584 | ...                   let text_res = translate_text_streaming(
+    |                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_res`
 
 warning: unused variable: `chunk`
-   --> src\overlay\process.rs:744:30
+   --> src\overlay\process.rs:823:34
     |
-744 | ...                   |chunk| { 
+823 | ...                   |chunk| {
     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
 
 warning: unused variable: `overlay_hwnd`
-   --> src\overlay\process.rs:652:5
+   --> src\overlay\process.rs:650:5
     |
-652 |     overlay_hwnd: HWND,
+650 |     overlay_hwnd: HWND,
     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
 
 warning: unused variable: `ui_language`
-   --> src\overlay\process.rs:684:40
+   --> src\overlay\process.rs:682:60
     |
-684 |     let (groq_api_key, gemini_api_key, ui_language) = {
-    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+682 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
 
 warning: unused variable: `streaming_enabled`
-   --> src\overlay\process.rs:696:9
+   --> src\overlay\process.rs:694:9
     |
-696 |     let streaming_enabled = preset.streaming_enabled;
+694 |     let streaming_enabled = preset.streaming_enabled;
     |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
 
 warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1049:34
+    --> src\overlay\process.rs:1073:34
      |
-1049 | ...                   |chunk| {}
+1073 | ...                   |chunk| {}
      |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
 
 warning: unused variable: `chunk`
-   --> src\overlay\process.rs:960:22
+   --> src\overlay\process.rs:983:22
     |
-960 |                     |chunk| { 
+983 |                     |chunk| { 
     |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
 
 warning: unused variable: `overlay_hwnd`
-   --> src\overlay\process.rs:853:5
+   --> src\overlay\process.rs:872:5
     |
-853 |     overlay_hwnd: HWND,
+872 |     overlay_hwnd: HWND,
     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
 
 warning: unused variable: `ui_language`
-   --> src\overlay\process.rs:885:40
+   --> src\overlay\process.rs:904:60
     |
-885 |     let (groq_api_key, gemini_api_key, ui_language) = {
-    |                                        ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+904 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
 
-warning: unused variable: `chunk`
-    --> src\overlay\process.rs:1215:26
-     |
-1215 |                         |chunk| {}
-     |                          ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+warning: value assigned to `*self.is_generating` is never read
+   --> src\overlay\assistant_overlay.rs:149:25
+    |
+149 |                         self.is_generating = true; // Local UI state
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: variable does not need to be mutable
+  --> src\assistant.rs:89:5
+   |
+89 |     mut on_chunk: F,
+   |     ----^^^^^^^^
+   |     |
+   |     help: remove this `mut`
+
+warning: unused variable: `clipboard_context`
+  --> src\assistant.rs:88:5
+   |
+88 |     clipboard_context: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_clipboard_context`
 
 warning: unused variable: `error_msg`
-  --> src\main.rs:74:13
+  --> src\main.rs:78:13
    |
-74 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+78 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
 
-Some errors have detailed explanations: E0282, E0599.
-For more information about an error, try `rustc --explain E0282`.
-warning: `xt-screen-translator` (bin "xt-screen-translator") generated 18 warnings
-error: could not compile `xt-screen-translator` (bin "xt-screen-translator") due to 4 previous errors; 18 warnings emitted
+warning: fields `assistant_context_clipboard`, `assistant_context_screen`, and `assistant_clear_history` are never read
+  --> src\gui\locale.rs:74:10
+   |
+ 2 | pub struct LocaleText {
+   |            ---------- fields in this struct
+...
+74 |      pub assistant_context_clipboard: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+75 |      pub assistant_context_screen: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^
+76 |      pub assistant_clear_history: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `GdiObj` is never constructed
+  --> src\overlay\result\paint.rs:10:8
+   |
+10 | struct GdiObj(HGDIOBJ);
+   |        ^^^^^^
+
+warning: associated functions `from_hpen` and `from_hbrush` are never used
+  --> src\overlay\result\paint.rs:12:8
+   |
+11 | impl GdiObj {
+   | ----------- associated functions in this implementation
+12 |     fn from_hpen(pen: HPEN) -> Self { GdiObj(HGDIOBJ(pen.0)) }
+   |        ^^^^^^^^^
+13 |     fn from_hbrush(brush: HBRUSH) -> Self { GdiObj(HGDIOBJ(brush.0)) }
+   |        ^^^^^^^^^^^
+
+warning: function `show_audio_result` is never used
+   --> src\overlay\process.rs:291:8
+    |
+291 | pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT, retrans_rect: Option<RECT>) {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `AssistantOverlay` is never constructed
+  --> src\overlay\assistant_overlay.rs:11:12
+   |
+11 | pub struct AssistantOverlay {
+   |            ^^^^^^^^^^^^^^^^
+
+warning: associated items `new` and `toggle_visibility` are never used
+  --> src\overlay\assistant_overlay.rs:22:12
+   |
+21 | impl AssistantOverlay {
+   | --------------------- associated items in this implementation
+22 |     pub fn new(config: Config, history: Arc<Mutex<ConversationHistory>>) -> Self {
+   |            ^^^
+...
+34 |     pub fn toggle_visibility(&mut self) {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: field `scroll_to_bottom` is never read
+  --> src\overlay\assistant_overlay.rs:45:5
+   |
+40 | pub struct AssistantWindow {
+   |            --------------- field in this struct
+...
+45 |     scroll_to_bottom: bool,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 33 warnings (run `cargo fix --bin "xt-screen-translator" -p xt-screen-translator` to apply 24 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.34s

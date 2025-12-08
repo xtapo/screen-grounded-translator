@@ -19,6 +19,7 @@ pub enum Icon {
     Info,
     Statistics,
     Refresh,
+    Robot,
 }
 
 /// Main entry point: Draw a clickable icon button
@@ -368,6 +369,25 @@ fn paint_internal(painter: &egui::Painter, rect: egui::Rect, icon: Icon, color: 
 
                 painter.add(egui::Shape::line(vec![p1, *tip, p2], refresh_stroke));
             }
+        }
+
+        Icon::Robot => {
+             // Head
+             let head_rect = egui::Rect::from_center_size(center - egui::vec2(0.0, 1.0 * scale), egui::vec2(12.0 * scale, 10.0 * scale));
+             painter.rect_stroke(head_rect, 2.0 * scale, stroke);
+             
+             // Antennas
+             let ant_y = head_rect.top();
+             painter.line_segment([egui::pos2(center.x - 3.0 * scale, ant_y), egui::pos2(center.x - 5.0 * scale, ant_y - 2.5 * scale)], stroke);
+             painter.line_segment([egui::pos2(center.x + 3.0 * scale, ant_y), egui::pos2(center.x + 5.0 * scale, ant_y - 2.5 * scale)], stroke);
+             
+             // Eyes
+             painter.circle_filled(head_rect.center() - egui::vec2(3.0 * scale, 1.0 * scale), 1.2 * scale, color);
+             painter.circle_filled(head_rect.center() + egui::vec2(3.0 * scale, -1.0 * scale), 1.2 * scale, color);
+             
+             // Mouth (Line)
+             let mouth_y = head_rect.center().y + 2.5 * scale;
+             painter.line_segment([egui::pos2(center.x - 2.0 * scale, mouth_y), egui::pos2(center.x + 2.0 * scale, mouth_y)], stroke);
         }
     }
 }

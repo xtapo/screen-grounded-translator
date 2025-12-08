@@ -110,6 +110,7 @@ enum ViewMode {
     Global,
     Preset(usize),
     History,
+    Assistant,
 }
 
 pub struct SettingsApp {
@@ -144,6 +145,11 @@ pub struct SettingsApp {
     history_search_query: String,
     show_favorites_only: bool,
     selected_history_id: Option<String>,
+
+    // Assistant State
+    assistant_history: Arc<Mutex<crate::assistant::ConversationHistory>>,
+    assistant_input: String,
+    assistant_generating: bool,
 }
 
 impl SettingsApp {
@@ -266,6 +272,9 @@ impl SettingsApp {
             history_search_query: String::new(),
             show_favorites_only: false,
             selected_history_id: None,
+            assistant_history: Arc::new(Mutex::new(crate::assistant::ConversationHistory::new(20))),
+            assistant_input: String::new(),
+            assistant_generating: false,
         }
     }
 
@@ -671,6 +680,16 @@ impl eframe::App for SettingsApp {
                         if ui.selectable_label(is_history, text.history_title).clicked() {
                             self.history_entries = crate::history::load_history();
                             self.view_mode = ViewMode::History;
+                        }
+                    });
+
+                    ui.add_space(5.0);
+                    // Assistant Button
+                    let is_assistant = matches!(self.view_mode, ViewMode::Assistant);
+                    ui.horizontal(|ui| {
+                        draw_icon_static(ui, Icon::Robot, None);
+                        if ui.selectable_label(is_assistant, text.assistant_title).clicked() {
+                            self.view_mode = ViewMode::Assistant;
                         }
                     });
                 });
@@ -1571,12 +1590,133 @@ impl eframe::App for SettingsApp {
                                 }
                             }
                         }
+
+                        ViewMode::Assistant => {
+                            ui.allocate_ui(egui::vec2(ui.available_width(), ui.available_height()), |ui| {
+                                ui.heading(text.assistant_title);
+                                ui.separator();
+                                
+                                // Chat Area
+                                egui::ScrollArea::vertical()
+
+                                   .stick_to_bottom(true)
+                                   .max_height(ui.available_height() - 50.0)
+                                   .show(ui, |ui: &mut egui::Ui| {
+                                        // Use a block to Scope the lock
+                                        let messages = {
+                                            if let Ok(history) = self.assistant_history.lock() {
+                                                history.messages.clone()
+                                            } else {
+                                                Vec::new()
+                                            }
+                                        };
+
+                                        for msg in messages {
+                                            let is_user = msg.role == "user";
+                                            let align = if is_user { egui::Align::Max } else { egui::Align::Min };
+                                            ui.with_layout(egui::Layout::top_down(align), |ui: &mut egui::Ui| {
+                                                let bg_color = if is_user { 
+                                                    egui::Color32::from_rgb(0, 120, 215)
+                                                } else { 
+                                                    if self.config.dark_mode { egui::Color32::from_gray(60) } else { egui::Color32::from_gray(230) }
+                                                };
+                                                let text_color = if is_user { egui::Color32::WHITE } else { ui.visuals().text_color() };
+                                                
+                                                egui::Frame::none()
+                                                    .fill(bg_color)
+                                                    .rounding(8.0)
+                                                    .inner_margin(8.0)
+                                                    .show(ui, |ui| {
+                                                        ui.set_max_width(ui.available_width() * 0.85);
+                                                        // Context indicators
+                                                        if let Some(_img) = &msg.context_image {
+                                                            ui.label(egui::RichText::new("📷 [Image]").italics().small().color(text_color));
+                                                        }
+                                                        if let Some(txt) = &msg.context_text {
+                                                            let snippet: String = txt.chars().take(50).collect();
+                                                            ui.label(egui::RichText::new(format!("📋 [Context]: {}...", snippet)).italics().small().color(text_color));
+                                                        }
+                                                        ui.label(egui::RichText::new(&msg.content).color(text_color));
+                                                    });
+                                            });
+                                            ui.add_space(5.0);
+                                        }
+                                        if self.assistant_generating {
+                                            ui.spinner();
+                                        }
+                                   });
+                                
+                                ui.separator();
+                                
+                                // Input Area
+                                ui.horizontal(|ui| {
+                                    let response = ui.add(egui::TextEdit::singleline(&mut self.assistant_input)
+                                        .hint_text(text.assistant_input_placeholder)
+                                        .desired_width(ui.available_width() - 60.0));
+                                        
+                                    if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) || ui.button(text.assistant_send).clicked() {
+                                        let input = self.assistant_input.trim().to_string();
+                                        if !input.is_empty() {
+                                            self.assistant_input.clear();
+                                            self.assistant_generating = true;
+
+                                            let history_arc = self.assistant_history.clone();
+                                            let config_clone = self.config.clone();
+                                            
+                                            // Add User Message immediately
+                                            {
+                                                if let Ok(mut h) = history_arc.lock() {
+                                                     // Context Logic
+                                                     let mut context_text = None;
+                                                     if config_clone.assistant.auto_include_context {
+                                                         if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                                                             if let Ok(text) = clipboard.get_text() {
+                                                                 if !text.trim().is_empty() && text.len() < 5000 {
+                                                                     context_text = Some(text);
+                                                                 }
+                                                             }
+                                                         }
+                                                     }
+                                                    h.add_user_message(input.clone(), None, context_text);
+                                                    h.add_assistant_message(String::new());
+                                                }
+                                            }
+
+                                            std::thread::spawn(move || {
+                                                let mut current_resp = String::new();
+                                                // Create snapshot for API
+                                                let history_snap = {
+                                                    if let Ok(h) = history_arc.lock() {
+                                                        h.messages.clone()
+                                                    } else { Vec::new() }
+                                                };
+                                                let temp_h = crate::assistant::ConversationHistory { messages: history_snap, max_messages: 20 };
+
+                                                let _ = crate::assistant::send_chat_streaming(&config_clone, &temp_h, input, None, None, |chunk| {
+                                                    current_resp.push_str(chunk);
+                                                    if let Ok(mut h) = history_arc.lock() {
+                                                        if let Some(last) = h.messages.last_mut() {
+                                                            if last.role == "assistant" {
+                                                                last.content = current_resp.clone();
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                                // We can't set generating=false easily here without UI context handle or atomic
+                                            });
+                                            self.assistant_generating = false; // Reset UI state immediately (limitation of no-async)
+                                        }
+                                        response.request_focus();
+                                    }
+                                });
+                            });
+                        }
                     }
                 });
-            }); // End of Main Split
-        }); // End of CentralPanel
+            });
+        });
     }
-    
+
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.tray_icon = None;
     }

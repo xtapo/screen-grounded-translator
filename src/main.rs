@@ -9,6 +9,7 @@ mod icon_gen;
 mod model_config;
 mod history;
 mod live_captions;
+mod assistant;
 
 use std::sync::{Arc, Mutex};
 use std::panic;
@@ -39,17 +40,20 @@ pub struct AppState {
     pub registered_hotkey_ids: Vec<i32>, // Track IDs of currently registered hotkeys
     // New: Track API usage limits (Key: Model Full Name, Value: "Remaining / Total")
     pub model_usage_stats: HashMap<String, String>, 
+    pub assistant_history: Arc<Mutex<assistant::ConversationHistory>>,
 }
 
 lazy_static! {
     pub static ref APP: Arc<Mutex<AppState>> = Arc::new(Mutex::new({
         let config = load_config();
+        let history = Arc::new(Mutex::new(assistant::ConversationHistory::new(config.assistant.max_history)));
         AppState {
             config,
             original_screenshot: None,
             hotkeys_updated: false,
             registered_hotkey_ids: Vec::new(),
             model_usage_stats: HashMap::new(),
+            assistant_history: history,
         }
     }));
 }
@@ -202,6 +206,19 @@ fn register_all_hotkeys(hwnd: HWND) {
             registered_ids.push(id);
         }
     }
+    
+    // Assistant Hotkey (ID 9000)
+    if let Some(hk) = &app.config.assistant.hotkey {
+        let id = 9000;
+        unsafe {
+            let res = RegisterHotKey(hwnd, id, HOT_KEY_MODIFIERS(hk.modifiers), hk.code);
+            log::info!("Registered Assistant Hotkey ID: {}, Code: {}, Mods: {}, Success: {:?}", id, hk.code, hk.modifiers, res);
+        }
+        registered_ids.push(id);
+    } else {
+        log::warn!("No hotkey configured for Assistant!");
+    }
+    
     app.registered_hotkey_ids = registered_ids;
 }
 
@@ -277,6 +294,20 @@ unsafe extern "system" fn hotkey_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpar
     match msg {
         WM_HOTKEY => {
             let id = wparam.0 as i32;
+            if id == 9000 {
+                log::info!("Assistant Hotkey (9000) Pressed! Spawning overlay...");
+                // Spawn Assistant Overlay
+                let history = if let Ok(app) = APP.lock() {
+                     app.assistant_history.clone()
+                } else { return LRESULT(0); };
+                
+                std::thread::spawn(move || {
+                    log::info!("Calling overlay::assistant_overlay::show_assistant_overlay");
+                    overlay::assistant_overlay::show_assistant_overlay(history);
+                });
+                return LRESULT(0);
+            }
+
             if id > 0 {
                 let preset_idx = ((id - 1) / 1000) as usize;
                 

@@ -110,6 +110,31 @@ impl Default for LiveCaptionsConfig {
     }
 }
 
+/// AI Assistant configuration
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AssistantConfig {
+    pub enabled: bool,
+    pub model: String,
+    pub system_prompt: String,
+    pub max_history: usize,
+    #[serde(default)]
+    pub auto_include_context: bool,
+    pub hotkey: Option<Hotkey>,
+}
+
+impl Default for AssistantConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            model: "gemini-2.5-flash".to_string(),
+            system_prompt: "You are a helpful AI assistant integrated into a screen translator app. Be concise and helpful.".to_string(),
+            max_history: 20,
+            auto_include_context: true,
+            hotkey: Some(Hotkey { code: 65, name: "A".to_string(), modifiers: 6 }),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
     pub api_key: String,
@@ -122,6 +147,8 @@ pub struct Config {
     pub ui_language: String,
     #[serde(default)]
     pub live_captions: LiveCaptionsConfig,
+    #[serde(default)]
+    pub assistant: AssistantConfig,
 }
 
     impl Default for Config {
@@ -453,6 +480,7 @@ pub struct Config {
             dark_mode: true,
             ui_language: "vi".to_string(),
             live_captions: LiveCaptionsConfig::default(),
+            assistant: AssistantConfig::default(),
         }
     }
 }
