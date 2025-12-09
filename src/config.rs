@@ -127,6 +127,8 @@ pub struct QuickAction {
     pub preset_id: String, // Which preset to trigger
     pub icon: String,      // Icon/emoji identifier
     pub enabled: bool,
+    #[serde(default)]
+    pub model: String,     // Model to use (empty = use preset's model)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -146,6 +148,7 @@ impl Default for QuickActionsConfig {
                     preset_id: "preset_translate".to_string(),
                     icon: "🌐".to_string(),
                     enabled: true,
+                    model: "gemini-flash".to_string(),
                 },
                 QuickAction {
                     id: "ocr".to_string(),
@@ -153,6 +156,7 @@ impl Default for QuickActionsConfig {
                     preset_id: "preset_ocr".to_string(),
                     icon: "📝".to_string(),
                     enabled: true,
+                    model: "gemini-flash".to_string(),
                 },
                 QuickAction {
                     id: "chat".to_string(),
@@ -160,6 +164,7 @@ impl Default for QuickActionsConfig {
                     preset_id: "preset_chat".to_string(),
                     icon: "💬".to_string(),
                     enabled: true,
+                    model: "gemini-flash".to_string(),
                 },
                 QuickAction {
                     id: "summarize".to_string(),
@@ -167,6 +172,7 @@ impl Default for QuickActionsConfig {
                     preset_id: "preset_summarize".to_string(),
                     icon: "📋".to_string(),
                     enabled: true,
+                    model: "gemini-flash".to_string(),
                 },
             ],
         }

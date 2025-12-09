@@ -19,8 +19,8 @@ use crate::config::QuickAction;
 lazy_static::lazy_static! {
     /// Currently visible quick actions menu state
     static ref MENU_STATE: Mutex<Option<QuickActionsState>> = Mutex::new(None);
-    /// Selected action result (preset_id or None if cancelled)
-    static ref SELECTED_ACTION: Mutex<Option<String>> = Mutex::new(None);
+    /// Selected action result (QuickAction or None if cancelled)
+    static ref SELECTED_ACTION: Mutex<Option<QuickAction>> = Mutex::new(None);
     /// Flag to indicate menu has been dismissed
     static ref MENU_DISMISSED: AtomicBool = AtomicBool::new(false);
 }
@@ -39,11 +39,11 @@ const MENU_PADDING: i32 = 8;
 const CORNER_RADIUS: i32 = 12;
 
 /// Show the quick actions menu at the given position
-/// Returns the selected preset_id, or None if cancelled
+/// Returns the selected QuickAction (with preset_id and model), or None if cancelled
 pub fn show_quick_actions_menu(
     selection_rect: RECT,
     _captured_image: Vec<u8>, // Reserved for future use (thumbnail preview)
-) -> Option<String> {
+) -> Option<QuickAction> {
     // Get enabled actions from config
     let actions: Vec<QuickAction> = {
         if let Ok(app) = APP.lock() {
@@ -200,8 +200,8 @@ unsafe extern "system" fn quick_actions_wnd_proc(
                 if let Ok(state) = MENU_STATE.lock() {
                     if let Some(ref menu_state) = *state {
                         if item_idx < menu_state.actions.len() {
-                            let preset_id = menu_state.actions[item_idx].preset_id.clone();
-                            *SELECTED_ACTION.lock().unwrap() = Some(preset_id);
+                            let action = menu_state.actions[item_idx].clone();
+                            *SELECTED_ACTION.lock().unwrap() = Some(action);
                         }
                     }
                 }
@@ -218,8 +218,8 @@ unsafe extern "system" fn quick_actions_wnd_proc(
                     if let Ok(state) = MENU_STATE.lock() {
                         if let Some(ref menu_state) = *state {
                             if idx < menu_state.actions.len() {
-                                let preset_id = menu_state.actions[idx].preset_id.clone();
-                                *SELECTED_ACTION.lock().unwrap() = Some(preset_id);
+                                let action = menu_state.actions[idx].clone();
+                                *SELECTED_ACTION.lock().unwrap() = Some(action);
                             }
                         }
                     }

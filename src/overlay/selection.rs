@@ -187,13 +187,17 @@ unsafe extern "system" fn selection_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARA
                                     
                                     drop(app); // Release lock before showing menu
                                     
-                                    // Show quick actions menu
-                                    if let Some(selected_preset_id) = super::quick_actions::show_quick_actions_menu(rect, png_data) {
-                                        // Find the preset and process
-                                        if let Ok(app2) = app_clone.lock() {
+                                    // Show quick actions menu - returns selected QuickAction with model
+                                    if let Some(selected_action) = super::quick_actions::show_quick_actions_menu(rect, png_data) {
+                                        // Find the preset and process with selected model
+                                        if let Ok(mut app2) = app_clone.lock() {
                                             if let Some(preset_idx) = app2.config.presets.iter()
-                                                .position(|p| p.id == selected_preset_id) 
+                                                .position(|p| p.id == selected_action.preset_id) 
                                             {
+                                                // Override model if QuickAction has a specific model set
+                                                if !selected_action.model.is_empty() {
+                                                    app2.config.presets[preset_idx].model = selected_action.model.clone();
+                                                }
                                                 drop(app2);
                                                 process_and_close(app_clone.clone(), rect, HWND(0), preset_idx);
                                             }

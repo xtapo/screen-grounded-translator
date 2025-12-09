@@ -919,14 +919,56 @@ impl eframe::App for SettingsApp {
                                     self.save_and_sync();
                                 }
                                 
-                                // Show configured actions (read-only for now)
+                                // Show and configure actions with model selection
                                 if self.config.quick_actions.enabled {
-                                    ui.add_space(5.0);
-                                    ui.label(egui::RichText::new("Configured actions:").size(11.0).color(ui.visuals().weak_text_color()));
-                                    for action in &self.config.quick_actions.actions {
-                                        if action.enabled {
-                                            ui.label(format!("  {} {}", action.icon, action.name));
-                                        }
+                                    ui.add_space(8.0);
+                                    
+                                    // Get vision models for dropdown
+                                    let vision_models: Vec<&crate::model_config::ModelConfig> = 
+                                        crate::model_config::get_all_models()
+                                            .iter()
+                                            .filter(|m| m.model_type == crate::model_config::ModelType::Vision)
+                                            .collect();
+                                    
+                                    let mut changed = false;
+                                    
+                                    for i in 0..self.config.quick_actions.actions.len() {
+                                        let action = &mut self.config.quick_actions.actions[i];
+                                        
+                                        ui.horizontal(|ui| {
+                                            // Enable/disable checkbox
+                                            if ui.checkbox(&mut action.enabled, "").changed() {
+                                                changed = true;
+                                            }
+                                            
+                                            // Icon and name
+                                            ui.label(format!("{} {}", action.icon, action.name));
+                                            
+                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                // Model dropdown - use get_name_only for display
+                                                let current_model_name = vision_models.iter()
+                                                    .find(|m| m.id == action.model)
+                                                    .map(|m| m.get_name_only(&self.config.ui_language))
+                                                    .unwrap_or_else(|| "Select model".to_string());
+                                                
+                                                egui::ComboBox::from_id_source(format!("qa_model_{}", action.id))
+                                                    .width(120.0)
+                                                    .selected_text(current_model_name)
+                                                    .show_ui(ui, |ui| {
+                                                        for model in &vision_models {
+                                                            let model_label = model.get_name_only(&self.config.ui_language);
+                                                            if ui.selectable_label(action.model == model.id, &model_label).clicked() {
+                                                                action.model = model.id.clone();
+                                                                changed = true;
+                                                            }
+                                                        }
+                                                    });
+                                            });
+                                        });
+                                    }
+                                    
+                                    if changed {
+                                        self.save_and_sync();
                                     }
                                 }
                             });
