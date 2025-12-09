@@ -112,17 +112,6 @@ lazy_static::lazy_static! {
             "250 lượt/ngày"
         ),
         ModelConfig::new(
-            "gemini-2.5-flash",
-            "google",
-            "Flash mới nhất",
-            "Flash (최신)",
-            "Flash (Latest)",
-            "gemini-1.5-flash-latest", // Currently mapping to 1.5-flash-latest as 2.5 is not out/public yet for Flash
-            ModelType::Vision,
-            true,
-            "1000 lượt/ngày"
-        ),
-        ModelConfig::new(
             "gemini-pro",
             "google",
             "Siêu chính xác, chậm",

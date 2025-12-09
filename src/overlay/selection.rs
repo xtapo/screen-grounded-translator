@@ -4,6 +4,7 @@ use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::LibraryLoader::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::{SetCapture, ReleaseCapture, VK_ESCAPE};
 use windows::core::*;
+use image::GenericImageView;
 
 use super::process::process_and_close;
 use crate::{APP};
@@ -135,14 +136,83 @@ unsafe extern "system" fn selection_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARA
                 let height = (rect.bottom - rect.top).abs();
 
                 if width > 10 && height > 10 {
-                    IS_PROCESSING = true;
-                    SetTimer(hwnd, ANIM_TIMER_ID, 16, None);
-                    
-                    let app_clone = APP.clone();
-                    let p_idx = CURRENT_PRESET_IDX;
-                    std::thread::spawn(move || {
-                        process_and_close(app_clone, rect, hwnd, p_idx);
-                    });
+                    // Check if Quick Actions is enabled
+                    let (quick_actions_enabled, preset_show_quick_actions) = {
+                        if let Ok(app) = APP.lock() {
+                            let qa_enabled = app.config.quick_actions.enabled;
+                            let preset_qa = if CURRENT_PRESET_IDX < app.config.presets.len() {
+                                app.config.presets[CURRENT_PRESET_IDX].show_quick_actions
+                            } else {
+                                false
+                            };
+                            (qa_enabled, preset_qa)
+                        } else {
+                            (false, false)
+                        }
+                    };
+
+                    // If Quick Actions is enabled globally or for this preset, show menu
+                    if quick_actions_enabled || preset_show_quick_actions {
+                        // Close selection overlay first
+                        SendMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+                        
+                        // Show Quick Actions menu in a new thread
+                        let app_clone = APP.clone();
+                        std::thread::spawn(move || {
+                            // Capture the region first
+                            if let Ok(app) = app_clone.lock() {
+                                if let Some(ref screenshot) = app.original_screenshot {
+                                    // Crop the selected region
+                                    let screen_x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+                                    let screen_y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+                                    
+                                    let crop_x = (rect.left - screen_x).max(0) as u32;
+                                    let crop_y = (rect.top - screen_y).max(0) as u32;
+                                    let crop_w = width as u32;
+                                    let crop_h = height as u32;
+                                    
+                                    let cropped = image::imageops::crop_imm(
+                                        screenshot, 
+                                        crop_x, crop_y, 
+                                        crop_w.min(screenshot.width() - crop_x), 
+                                        crop_h.min(screenshot.height() - crop_y)
+                                    ).to_image();
+                                    
+                                    // Encode to PNG for the menu
+                                    let mut png_data = Vec::new();
+                                    let _ = cropped.write_to(
+                                        &mut std::io::Cursor::new(&mut png_data), 
+                                        image::ImageFormat::Png
+                                    );
+                                    
+                                    drop(app); // Release lock before showing menu
+                                    
+                                    // Show quick actions menu
+                                    if let Some(selected_preset_id) = super::quick_actions::show_quick_actions_menu(rect, png_data) {
+                                        // Find the preset and process
+                                        if let Ok(app2) = app_clone.lock() {
+                                            if let Some(preset_idx) = app2.config.presets.iter()
+                                                .position(|p| p.id == selected_preset_id) 
+                                            {
+                                                drop(app2);
+                                                process_and_close(app_clone.clone(), rect, HWND(0), preset_idx);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        // Original flow - process immediately
+                        IS_PROCESSING = true;
+                        SetTimer(hwnd, ANIM_TIMER_ID, 16, None);
+                        
+                        let app_clone = APP.clone();
+                        let p_idx = CURRENT_PRESET_IDX;
+                        std::thread::spawn(move || {
+                            process_and_close(app_clone, rect, hwnd, p_idx);
+                        });
+                    }
                 } else {
                     SendMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
                 }

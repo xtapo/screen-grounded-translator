@@ -87,6 +87,26 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
         let preset_name_for_history = preset.name.clone();
         let input_summary = format!("Screenshot {}x{}", crop_w, crop_h);
         
+        // Check if this is a chat preset - show input popup first
+        let is_chat_mode = preset.preset_type == "chat" || preset.enable_chat_mode;
+        
+        let user_question = if is_chat_mode {
+            // Close selection overlay
+            unsafe { PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)); }
+            
+            // Show chat input popup and wait for user input
+            match super::chat_input::show_chat_input_popup(rect) {
+                Some(question) => question,
+                None => {
+                    // User cancelled
+                    log::info!("Chat input cancelled by user");
+                    return;
+                }
+            }
+        } else {
+            String::new()
+        };
+        
         // Spawn UI Thread for Results
         std::thread::spawn(move || {
             // Create Primary Window (Hidden initially)
@@ -99,11 +119,18 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                 let mut first_chunk_received = false;
 
                 // --- STEP 1: VISION API ---
+                // For chat mode, combine system prompt with user question
+                let effective_prompt = if is_chat_mode && !user_question.is_empty() {
+                    format!("{}\n\nUser question: {}", final_prompt, user_question)
+                } else {
+                    final_prompt
+                };
+                
                 let vision_res = translate_image_streaming(
                     &groq_api_key, 
                     &gemini_api_key, 
                     &openrouter_api_key,
-                    final_prompt, 
+                    effective_prompt, 
                     model_name, 
                     provider, 
                     cropped, 

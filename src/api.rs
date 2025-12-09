@@ -675,9 +675,168 @@ where
                     full_content = content_str.clone();
                 }
                 
-                on_chunk(&full_content);
+            on_chunk(&full_content);
             }
         }
+    }
+
+    Ok(full_content)
+}
+
+/// Chat with AI using image context and conversation history
+/// This function supports multi-turn conversations for the AI Chat feature
+pub fn chat_with_image_context<F>(
+    gemini_api_key: &str,
+    image_base64: Option<&str>,      // Image context (base64 PNG)
+    conversation_history: Vec<(String, String)>, // (role, content) tuples
+    user_question: String,
+    model: String,
+    streaming_enabled: bool,
+    mut on_chunk: F,
+) -> Result<String>
+where
+    F: FnMut(&str),
+{
+    log::info!("Starting AI chat. Model: {}, History messages: {}, Has image: {}", 
+               model, conversation_history.len(), image_base64.is_some());
+
+    if gemini_api_key.trim().is_empty() {
+        return Err(anyhow::anyhow!("NO_API_KEY"));
+    }
+
+    let mut full_content = String::new();
+
+    // Build the contents array with conversation history
+    let mut contents: Vec<serde_json::Value> = Vec::new();
+
+    // Add image context in the first message if available
+    let mut first_message_added = false;
+    
+    for (role, content) in &conversation_history {
+        let role_str = if role == "user" { "user" } else { "model" };
+        
+        if !first_message_added && role == "user" && image_base64.is_some() {
+            // First user message with image
+            contents.push(serde_json::json!({
+                "role": role_str,
+                "parts": [
+                    { "text": content },
+                    {
+                        "inline_data": {
+                            "mime_type": "image/png",
+                            "data": image_base64.unwrap()
+                        }
+                    }
+                ]
+            }));
+            first_message_added = true;
+        } else {
+            contents.push(serde_json::json!({
+                "role": role_str,
+                "parts": [{ "text": content }]
+            }));
+        }
+    }
+
+    // Add the new user question
+    if !first_message_added && image_base64.is_some() {
+        // This is the first message and we have an image
+        contents.push(serde_json::json!({
+            "role": "user",
+            "parts": [
+                { "text": user_question },
+                {
+                    "inline_data": {
+                        "mime_type": "image/png",
+                        "data": image_base64.unwrap()
+                    }
+                }
+            ]
+        }));
+    } else {
+        contents.push(serde_json::json!({
+            "role": "user",
+            "parts": [{ "text": user_question }]
+        }));
+    }
+
+    let method = if streaming_enabled { "streamGenerateContent" } else { "generateContent" };
+    let url = if streaming_enabled {
+        format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:{}?alt=sse",
+            model, method
+        )
+    } else {
+        format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:{}",
+            model, method
+        )
+    };
+
+    let payload = serde_json::json!({
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 2048
+        }
+    });
+
+    let resp = UREQ_AGENT.post(&url)
+        .set("x-goog-api-key", gemini_api_key)
+        .send_json(payload)
+        .map_err(|e| {
+            let err_str = e.to_string();
+            if err_str.contains("401") || err_str.contains("403") {
+                anyhow::anyhow!("INVALID_API_KEY")
+            } else {
+                anyhow::anyhow!("Gemini Chat API Error: {}", err_str)
+            }
+        })?;
+
+    if streaming_enabled {
+        let reader = BufReader::new(resp.into_reader());
+
+        for line in reader.lines() {
+            let line = line.map_err(|e| anyhow::anyhow!("Failed to read line: {}", e))?;
+            if line.starts_with("data: ") {
+                let json_str = &line["data: ".len()..];
+                if json_str.trim() == "[DONE]" { break; }
+
+                if let Ok(chunk_resp) = serde_json::from_str::<serde_json::Value>(json_str) {
+                    if let Some(candidates) = chunk_resp.get("candidates").and_then(|c| c.as_array()) {
+                        if let Some(first_candidate) = candidates.first() {
+                            if let Some(parts) = first_candidate.get("content").and_then(|c| c.get("parts")).and_then(|p| p.as_array()) {
+                                if let Some(first_part) = parts.first() {
+                                    if let Some(text) = first_part.get("text").and_then(|t| t.as_str()) {
+                                        full_content.push_str(text);
+                                        on_chunk(text);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        let chat_resp: serde_json::Value = resp.into_json()
+            .map_err(|e| anyhow::anyhow!("Failed to parse non-streaming response: {}", e))?;
+
+        if let Some(candidates) = chat_resp.get("candidates").and_then(|c| c.as_array()) {
+            if let Some(first_choice) = candidates.first() {
+                if let Some(parts) = first_choice.get("content").and_then(|c| c.get("parts")).and_then(|p| p.as_array()) {
+                    full_content = parts.iter()
+                        .filter_map(|p| p.get("text").and_then(|t| t.as_str()))
+                        .collect::<String>();
+                    
+                    on_chunk(&full_content);
+                }
+            }
+        }
+    }
+
+    if full_content.is_empty() {
+        return Err(anyhow::anyhow!("No content received from AI Chat API"));
     }
 
     Ok(full_content)
@@ -1233,197 +1392,5 @@ pub fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) 
         .and_then(|t| t.as_str())
         .ok_or_else(|| anyhow::anyhow!("No text in response"))?;
     
-
     Ok(text.to_string())
-}
-
-pub fn chat_streaming_raw<F>(
-    groq_api_key: &str,
-    gemini_api_key: &str,
-    openrouter_api_key: &str,
-    prompt: String,
-    model: String,
-    provider: String,
-    mut on_chunk: F,
-) -> Result<String>
-where
-    F: FnMut(&str),
-{
-    log::info!("Starting generic chat. Provider: {}, Model: {}", provider, model);
-    let mut full_content = String::new();
-
-    if provider == "google" {
-        // --- GEMINI TEXT API ---
-        if gemini_api_key.trim().is_empty() {
-            return Err(anyhow::anyhow!("NO_API_KEY"));
-        }
-
-        let method = "streamGenerateContent";
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{}:{}?alt=sse",
-            model, method
-        );
-
-        let payload = serde_json::json!({
-            "contents": [{
-                "role": "user",
-                "parts": [{ "text": prompt }]
-            }]
-        });
-
-        let resp = UREQ_AGENT.post(&url)
-            .set("x-goog-api-key", gemini_api_key)
-            .send_json(payload)
-            .map_err(|e| {
-                let err_str = e.to_string();
-                if err_str.contains("401") || err_str.contains("403") {
-                    anyhow::anyhow!("INVALID_API_KEY")
-                } else {
-                    anyhow::anyhow!("Gemini Chat API Error: {}", err_str)
-                }
-            })?;
-
-        let reader = BufReader::new(resp.into_reader());
-        for line in reader.lines() {
-            let line = line.map_err(|e| anyhow::anyhow!("Failed to read line: {}", e))?;
-            if line.starts_with("data: ") {
-                let json_str = &line["data: ".len()..];
-                if json_str.trim() == "[DONE]" { break; }
-
-                if let Ok(chunk_resp) = serde_json::from_str::<serde_json::Value>(json_str) {
-                    if let Some(candidates) = chunk_resp.get("candidates").and_then(|c| c.as_array()) {
-                        if let Some(first_candidate) = candidates.first() {
-                            if let Some(parts) = first_candidate.get("content").and_then(|c| c.get("parts")).and_then(|p| p.as_array()) {
-                                if let Some(first_part) = parts.first() {
-                                    if let Some(text) = first_part.get("text").and_then(|t| t.as_str()) {
-                                        full_content.push_str(text);
-                                        on_chunk(text);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    } else if provider == "openrouter" {
-        // --- OPENROUTER TEXT API ---
-        if openrouter_api_key.trim().is_empty() {
-            return Err(anyhow::anyhow!("NO_API_KEY"));
-        }
-
-        let payload = serde_json::json!({
-            "model": model,
-            "messages": [
-                { "role": "user", "content": prompt }
-            ],
-            "stream": true
-        });
-
-        let mut resp_result = Err(anyhow::anyhow!("Request not started"));
-        for retry in 0..3 {            
-            let r = UREQ_AGENT.post("https://openrouter.ai/api/v1/chat/completions")
-                .set("Authorization", &format!("Bearer {}", openrouter_api_key))
-                .set("HTTP-Referer", "https://github.com/nhanh-vo/screen-grounded-translator")
-                .set("X-Title", "XT Screen Translator")
-                .send_json(payload.clone());
-
-            match r {
-                Ok(res) => {
-                     resp_result = Ok(res);
-                     break;
-                }
-                Err(ureq::Error::Status(429, _)) => {
-                     if retry < 2 {
-                         std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
-                         continue;
-                     }
-                     resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429)."));
-                }
-                Err(e) => {
-                    let err_str = e.to_string();
-                    if err_str.contains("401") {
-                        resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
-                    } else {
-                        resp_result = Err(anyhow::anyhow!("OpenRouter API Error: {}", err_str));
-                    }
-                    break;
-                }
-            }
-        }
-        let resp = resp_result?;
-        let reader = BufReader::new(resp.into_reader());
-        for line in reader.lines() {
-            let line = line?;
-            if line.starts_with("data: ") {
-                 let data = &line[6..];
-                 if data == "[DONE]" { break; }
-                 match serde_json::from_str::<StreamChunk>(data) {
-                     Ok(chunk) => {
-                         if let Some(content) = chunk.choices.get(0).and_then(|c| c.delta.content.as_ref()) {
-                             full_content.push_str(content);
-                             on_chunk(content);
-                         }
-                     }
-                     Err(_) => continue,
-                 }
-            }
-        }
-
-    } else {
-        // --- GROQ API (Default) ---
-        if groq_api_key.trim().is_empty() {
-            return Err(anyhow::anyhow!("NO_API_KEY"));
-        }
-
-        let payload = serde_json::json!({
-            "model": model,
-            "messages": [
-                { "role": "user", "content": prompt }
-            ],
-            "stream": true
-        });
-
-        let resp = UREQ_AGENT.post("https://api.groq.com/openai/v1/chat/completions")
-            .set("Authorization", &format!("Bearer {}", groq_api_key))
-            .send_json(payload)
-            .map_err(|e| {
-                let err_str = e.to_string();
-                if err_str.contains("401") {
-                    anyhow::anyhow!("INVALID_API_KEY")
-                } else {
-                    anyhow::anyhow!("{}", err_str)
-                }
-            })?;
-
-        // --- CAPTURE RATE LIMITS ---
-        if let Some(remaining) = resp.header("x-ratelimit-remaining-requests") {
-             let limit = resp.header("x-ratelimit-limit-requests").unwrap_or("?");
-             let usage_str = format!("{} / {}", remaining, limit);
-             if let Ok(mut app) = APP.lock() {
-                 app.model_usage_stats.insert(model.clone(), usage_str);
-             }
-        }
-
-        let reader = BufReader::new(resp.into_reader());
-        for line in reader.lines() {
-            let line = line?;
-            if line.starts_with("data: ") {
-                let data = &line[6..];
-                if data == "[DONE]" { break; }
-                match serde_json::from_str::<StreamChunk>(data) {
-                    Ok(chunk) => {
-                        if let Some(content) = chunk.choices.get(0).and_then(|c| c.delta.content.as_ref()) {
-                            full_content.push_str(content);
-                            on_chunk(content);
-                        }
-                    }
-                    Err(_) => continue,
-                }
-            }
-        }
-    }
-
-    Ok(full_content)
 }

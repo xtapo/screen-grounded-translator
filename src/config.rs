@@ -29,7 +29,7 @@ pub struct Preset {
     pub retranslate_auto_copy: bool,
     pub hide_overlay: bool,
     #[serde(default = "default_preset_type")]
-    pub preset_type: String, // "image", "audio", "video"
+    pub preset_type: String, // "image", "audio", "video", "chat"
     
     // --- Audio Fields ---
     #[serde(default = "default_audio_source")]
@@ -49,6 +49,12 @@ pub struct Preset {
 
     #[serde(default)]
     pub is_upcoming: bool,
+
+    // --- AI Chat Fields ---
+    #[serde(default)]
+    pub enable_chat_mode: bool, // Allow asking follow-up questions
+    #[serde(default)]
+    pub show_quick_actions: bool, // Show action menu after selection
 }
 
 fn default_preset_type() -> String { "image".to_string() }
@@ -82,6 +88,8 @@ impl Default for Preset {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         }
     }
 }
@@ -110,27 +118,57 @@ impl Default for LiveCaptionsConfig {
     }
 }
 
-/// AI Assistant configuration
+// --- Quick Actions Configuration ---
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AssistantConfig {
+pub struct QuickAction {
+    pub id: String,        // "translate", "ocr", "chat", "summarize"
+    pub name: String,      // Display name
+    pub preset_id: String, // Which preset to trigger
+    pub icon: String,      // Icon/emoji identifier
     pub enabled: bool,
-    pub model: String,
-    pub system_prompt: String,
-    pub max_history: usize,
-    #[serde(default)]
-    pub auto_include_context: bool,
-    pub hotkey: Option<Hotkey>,
 }
 
-impl Default for AssistantConfig {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QuickActionsConfig {
+    pub enabled: bool,
+    pub actions: Vec<QuickAction>,
+}
+
+impl Default for QuickActionsConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
-            model: "gemini-2.5-flash".to_string(),
-            system_prompt: "You are a helpful AI assistant integrated into a screen translator app. Be concise and helpful.".to_string(),
-            max_history: 20,
-            auto_include_context: true,
-            hotkey: Some(Hotkey { code: 65, name: "A".to_string(), modifiers: 6 }),
+            enabled: false, // Disabled by default, user can enable
+            actions: vec![
+                QuickAction {
+                    id: "translate".to_string(),
+                    name: "Translate".to_string(),
+                    preset_id: "preset_translate".to_string(),
+                    icon: "🌐".to_string(),
+                    enabled: true,
+                },
+                QuickAction {
+                    id: "ocr".to_string(),
+                    name: "Extract text".to_string(),
+                    preset_id: "preset_ocr".to_string(),
+                    icon: "📝".to_string(),
+                    enabled: true,
+                },
+                QuickAction {
+                    id: "chat".to_string(),
+                    name: "Ask AI".to_string(),
+                    preset_id: "preset_chat".to_string(),
+                    icon: "💬".to_string(),
+                    enabled: true,
+                },
+                QuickAction {
+                    id: "summarize".to_string(),
+                    name: "Summarize".to_string(),
+                    preset_id: "preset_summarize".to_string(),
+                    icon: "📋".to_string(),
+                    enabled: true,
+                },
+            ],
         }
     }
 }
@@ -148,7 +186,7 @@ pub struct Config {
     #[serde(default)]
     pub live_captions: LiveCaptionsConfig,
     #[serde(default)]
-    pub assistant: AssistantConfig,
+    pub quick_actions: QuickActionsConfig,
 }
 
     impl Default for Config {
@@ -183,6 +221,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 1.5. Translate+Retranslate Preset
@@ -213,6 +253,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 2. OCR Preset
@@ -240,6 +282,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 2.5. Extract text+Retranslate Preset
@@ -267,6 +311,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 3. Summarize Preset
@@ -297,6 +343,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 4. Description Preset
@@ -327,6 +375,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 5. Transcribe (Audio)
@@ -354,6 +404,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 6. Study language Preset
@@ -381,6 +433,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 7. Quick foreigner reply
@@ -408,6 +462,8 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         // 8. Quicker foreigner reply Preset (new 4th audio preset with gemini-audio)
@@ -438,9 +494,43 @@ pub struct Config {
             capture_interval_ms: 200,
             video_capture_method: "region".to_string(),
             is_upcoming: false,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
-        // 9. Video Summarize Placeholder (NEW)
+        // 9. Ask AI (Chat) Preset - NEW
+        let mut chat_lang_vars = HashMap::new();
+        chat_lang_vars.insert("language1".to_string(), default_lang.clone());
+
+        let chat_preset = Preset {
+            id: "preset_chat".to_string(),
+            name: "Ask AI".to_string(),
+            prompt: "Analyze this image and answer the user's question in {language1}. Be helpful, accurate and concise.".to_string(),
+            selected_language: default_lang.clone(),
+            language_vars: chat_lang_vars,
+            model: "gemini-flash".to_string(),
+            streaming_enabled: true,
+            auto_copy: false,
+            hotkeys: vec![Hotkey { code: 81, name: "Q".to_string(), modifiers: 0x0002 }], // Ctrl+Q
+            retranslate: false,
+            retranslate_to: default_lang.clone(),
+            retranslate_model: "fast_text".to_string(),
+            retranslate_streaming_enabled: true,
+            retranslate_auto_copy: false,
+            hide_overlay: false,
+            preset_type: "chat".to_string(),
+            audio_source: "mic".to_string(),
+            hide_recording_ui: false,
+            live_mode: false,
+            skip_frames: true,
+            capture_interval_ms: 200,
+            video_capture_method: "region".to_string(),
+            is_upcoming: false,
+            enable_chat_mode: true, // Enable chat mode for follow-up questions
+            show_quick_actions: false,
+        };
+
+        // 10. Video Summarize Placeholder
         let video_placeholder_preset = Preset {
             id: "preset_video_summary_placeholder".to_string(),
             name: "Summarize video (upcoming)".to_string(),
@@ -465,6 +555,8 @@ pub struct Config {
             live_mode: false,
             skip_frames: true,
             capture_interval_ms: 200,
+            enable_chat_mode: false,
+            show_quick_actions: false,
         };
 
         Self {
@@ -473,14 +565,14 @@ pub struct Config {
             openrouter_api_key: "".to_string(),
             presets: vec![
                 trans_preset, trans_retrans_preset, ocr_preset, extract_retrans_preset, 
-                sum_preset, desc_preset, audio_preset, study_lang_preset, 
+                sum_preset, desc_preset, chat_preset, audio_preset, study_lang_preset, 
                 transcribe_retrans_preset, quicker_reply_preset, video_placeholder_preset
             ],
             active_preset_idx: 0,
             dark_mode: true,
             ui_language: "vi".to_string(),
             live_captions: LiveCaptionsConfig::default(),
-            assistant: AssistantConfig::default(),
+            quick_actions: QuickActionsConfig::default(),
         }
     }
 }
