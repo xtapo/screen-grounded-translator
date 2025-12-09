@@ -150,7 +150,13 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                             }
                         }
                         if !hide_overlay {
-                            update_window_text(primary_hwnd, &text);
+                            // Apply markdown cleaning for chat mode
+                            let display_text = if is_chat_mode {
+                                super::utils::clean_markdown_for_display(&text)
+                            } else {
+                                text.to_string()
+                            };
+                            update_window_text(primary_hwnd, &display_text);
                         }
                     }
                 );
@@ -166,7 +172,13 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
                                 }
                             }
                             if !hide_overlay {
-                                update_window_text(primary_hwnd, &vision_text);
+                                // Apply markdown cleaning for chat mode
+                                let display_text = if is_chat_mode {
+                                    super::utils::clean_markdown_for_display(&vision_text)
+                                } else {
+                                    vision_text.clone()
+                                };
+                                update_window_text(primary_hwnd, &display_text);
                             }
                         }
 
