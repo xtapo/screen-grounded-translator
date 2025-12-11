@@ -255,6 +255,17 @@ lazy_static::lazy_static! {
             "Check OpenRouter"
         ),
         ModelConfig::new(
+            "gemini-2.0-flash-live",
+            "google", 
+            "Gemini 2.0 Flash Live (Real-time)",
+            "Gemini 2.0 Flash Live (실시간)",
+            "Gemini 2.0 Flash Live (Real-time)",
+            "gemini-2.0-flash-exp", 
+            ModelType::Audio,
+            true,
+            "Rate limited"
+        ),
+        ModelConfig::new(
             "gemini-2.0-flash-exp-free",
             "openrouter",
             "Gemini 2.0 Flash Exp (Miễn phí)",
@@ -271,7 +282,7 @@ lazy_static::lazy_static! {
             "Llama 3.2 11B Vision (Miễn phí)",
             "Llama 3.2 11B Vision (무료)",
             "Llama 3.2 11B Vision (Free)",
-            "meta-llama/llama-3.2-11b-vision-instruct:free",
+            "meta-llama/llama-3.2-11b-vision-instruct",
             ModelType::Vision,
             true,
             "Check OpenRouter"
@@ -282,7 +293,7 @@ lazy_static::lazy_static! {
             "Gemini Exp 1206 (Miễn phí)",
             "Gemini Exp 1206 (무료)",
             "Gemini Exp 1206 (Free)",
-            "google/gemini-exp-1206:free",
+            "google/gemini-exp-1206",
             ModelType::Vision,
             true,
             "Check OpenRouter"

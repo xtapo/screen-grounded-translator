@@ -10,6 +10,8 @@ mod model_config;
 mod history;
 mod live_captions;
 mod conversation;
+mod gemini_live;
+mod audio_capture;
 
 use std::sync::{Arc, Mutex};
 use std::panic;

@@ -1,0 +1,349 @@
+   Compiling xt-screen-translator v0.5.0 (F:\Github\screen-grounded-translator)
+warning: unused import: `windows::Win32::Foundation::*`
+ --> src\capture.rs:2:5
+  |
+2 | use windows::Win32::Foundation::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `url::Url`
+ --> src\gemini_live.rs:3:5
+  |
+3 | use url::Url;
+  |     ^^^^^^^^
+
+warning: unused import: `Mutex`
+ --> src\audio_capture.rs:3:22
+  |
+3 | use std::sync::{Arc, Mutex};
+  |                      ^^^^^
+
+warning: unused import: `windows::Win32::Graphics::Gdi::*`
+  --> src\main.rs:22:5
+   |
+22 | use windows::Win32::Graphics::Gdi::*;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: use of deprecated method `tungstenite::WebSocket::<Stream>::write_message`: Use `send`
+   --> src\gemini_live.rs:107:36
+    |
+107 |             if let Err(e) = socket.write_message(Message::Text(setup_json.into())) {
+    |                                    ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `tungstenite::WebSocket::<Stream>::write_message`: Use `send`
+   --> src\gemini_live.rs:151:40
+    |
+151 |                         let _ = socket.write_message(Message::Text(json.into()));
+    |                                        ^^^^^^^^^^^^^
+
+warning: use of deprecated method `tungstenite::WebSocket::<Stream>::read_message`: Use `read`
+   --> src\gemini_live.rs:156:30
+    |
+156 |                 match socket.read_message() {
+    |                              ^^^^^^^^^^^^
+
+warning: unused import: `image::GenericImageView`
+ --> src\overlay\selection.rs:7:5
+  |
+7 | use image::GenericImageView;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `overlay_hwnd`
+    --> src\api.rs:1252:5
+     |
+1252 |     overlay_hwnd: HWND, // The result window (or we create it here? No, session creates it)
+     |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> src\api.rs:1459:9
+     |
+1459 |     let mut client = match GeminiLiveClient::new(api_key, system_instruction, on_text) {
+     |         ----^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\gui\app.rs:862:45
+    |
+862 | ...                   let mut models_for_text: Vec<_> = get_all_models()
+    |                           ----^^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+
+warning: unused variable: `text_res`
+   --> src\overlay\process.rs:623:33
+    |
+623 | ...                   let text_res = translate_text_streaming(
+    |                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_res`
+
+warning: unused variable: `chunk`
+   --> src\overlay\process.rs:862:34
+    |
+862 | ...                   |chunk| {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:689:5
+    |
+689 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:721:60
+    |
+721 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: unused variable: `streaming_enabled`
+   --> src\overlay\process.rs:733:9
+    |
+733 |     let streaming_enabled = preset.streaming_enabled;
+    |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming_enabled`
+
+warning: unused variable: `chunk`
+    --> src\overlay\process.rs:1112:34
+     |
+1112 | ...                   |chunk| {}
+     |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `chunk`
+    --> src\overlay\process.rs:1022:22
+     |
+1022 |                     |chunk| { 
+     |                      ^^^^^ help: if this is intentional, prefix it with an underscore: `_chunk`
+
+warning: unused variable: `overlay_hwnd`
+   --> src\overlay\process.rs:911:5
+    |
+911 |     overlay_hwnd: HWND,
+    |     ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_overlay_hwnd`
+
+warning: unused variable: `ui_language`
+   --> src\overlay\process.rs:943:60
+    |
+943 |     let (groq_api_key, gemini_api_key, openrouter_api_key, ui_language) = {
+    |                                                            ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ui_language`
+
+warning: variable does not need to be mutable
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ----^^^^^^^^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: unused variable: `show_system_cursor`
+   --> src\overlay\result\mod.rs:231:17
+    |
+231 |             let mut show_system_cursor = false;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_system_cursor`
+
+warning: unused variable: `hwnd`
+   --> src\overlay\chat_input.rs:163:24
+    |
+163 | unsafe fn submit_input(hwnd: HWND) {
+    |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_hwnd`
+
+warning: unused variable: `wide`
+   --> src\overlay\chat_input.rs:246:17
+    |
+246 |             let wide: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+    |                 ^^^^ help: if this is intentional, prefix it with an underscore: `_wide`
+
+warning: unused variable: `error_msg`
+  --> src\main.rs:77:13
+   |
+77 |         let error_msg = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+
+warning: function `chat_with_image_context` is never used
+   --> src\api.rs:688:8
+    |
+688 | pub fn chat_with_image_context<F>(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: multiple fields are never read
+  --> src\gui\locale.rs:73:10
+   |
+ 2 | pub struct LocaleText {
+   |            ---------- fields in this struct
+...
+73 |      pub qa_translate: &'static str,
+   |          ^^^^^^^^^^^^
+74 |      pub qa_extract: &'static str,
+   |          ^^^^^^^^^^
+75 |      pub qa_ask_ai: &'static str,
+   |          ^^^^^^^^^
+76 |      pub qa_summarize: &'static str,
+   |          ^^^^^^^^^^^^
+77 |      pub chat_input_placeholder: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^^
+78 |      pub chat_send: &'static str,
+   |          ^^^^^^^^^
+79 |      pub chat_new_conversation: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^
+80 |      pub preset_type_chat: &'static str,
+   |          ^^^^^^^^^^^^^^^^
+81 |      pub enable_chat_mode: &'static str,
+   |          ^^^^^^^^^^^^^^^^
+82 |      pub enable_chat_mode_tooltip: &'static str,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `show_audio_result` is never used
+   --> src\overlay\process.rs:330:8
+    |
+330 | pub fn show_audio_result(preset: crate::config::Preset, text: String, rect: RECT, retrans_rect: Option<RECT>) {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `GdiObj` is never constructed
+  --> src\overlay\result\paint.rs:10:8
+   |
+10 | struct GdiObj(HGDIOBJ);
+   |        ^^^^^^
+
+warning: associated functions `from_hpen` and `from_hbrush` are never used
+  --> src\overlay\result\paint.rs:12:8
+   |
+11 | impl GdiObj {
+   | ----------- associated functions in this implementation
+12 |     fn from_hpen(pen: HPEN) -> Self { GdiObj(HGDIOBJ(pen.0)) }
+   |        ^^^^^^^^^
+13 |     fn from_hbrush(brush: HBRUSH) -> Self { GdiObj(HGDIOBJ(brush.0)) }
+   |        ^^^^^^^^^^^
+
+warning: fields `hwnd` and `selection_rect` are never read
+  --> src\overlay\quick_actions.rs:29:9
+   |
+28 | pub struct QuickActionsState {
+   |            ----------------- fields in this struct
+29 |     pub hwnd: HWND,
+   |         ^^^^
+30 |     pub selection_rect: RECT,
+   |         ^^^^^^^^^^^^^^
+
+warning: function `is_menu_visible` is never used
+   --> src\overlay\quick_actions.rs:154:8
+    |
+154 | pub fn is_menu_visible() -> bool {
+    |        ^^^^^^^^^^^^^^^
+
+warning: struct `ConversationMessage` is never constructed
+  --> src\conversation.rs:11:12
+   |
+11 | pub struct ConversationMessage {
+   |            ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `Conversation` is never constructed
+  --> src\conversation.rs:20:12
+   |
+20 | pub struct Conversation {
+   |            ^^^^^^^^^^^^
+
+warning: associated items `new`, `add_message`, and `get_api_messages` are never used
+  --> src\conversation.rs:29:12
+   |
+28 | impl Conversation {
+   | ----------------- associated items in this implementation
+29 |     pub fn new(image_base64: Option<String>) -> Self {
+   |            ^^^
+...
+40 |     pub fn add_message(&mut self, role: &str, content: &str, has_image: bool) {
+   |            ^^^^^^^^^^^
+...
+52 |     pub fn get_api_messages(&self) -> Vec<(String, String)> {
+   |            ^^^^^^^^^^^^^^^^
+
+warning: function `start_conversation` is never used
+  --> src\conversation.rs:66:8
+   |
+66 | pub fn start_conversation(image_base64: Option<String>) -> String {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `get_current_conversation` is never used
+  --> src\conversation.rs:74:8
+   |
+74 | pub fn get_current_conversation() -> Option<Conversation> {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `has_active_conversation` is never used
+  --> src\conversation.rs:79:8
+   |
+79 | pub fn has_active_conversation() -> bool {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `add_user_message` is never used
+  --> src\conversation.rs:84:8
+   |
+84 | pub fn add_user_message(content: &str) {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: function `add_assistant_message` is never used
+  --> src\conversation.rs:91:8
+   |
+91 | pub fn add_assistant_message(content: &str) {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_image_context` is never used
+  --> src\conversation.rs:98:8
+   |
+98 | pub fn get_image_context() -> Option<String> {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: function `get_context_messages` is never used
+   --> src\conversation.rs:107:8
+    |
+107 | pub fn get_context_messages() -> Vec<(String, String)> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_message_count` is never used
+   --> src\conversation.rs:117:8
+    |
+117 | pub fn get_message_count() -> usize {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `clear_conversation` is never used
+   --> src\conversation.rs:127:8
+    |
+127 | pub fn clear_conversation() {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `update_image_context` is never used
+   --> src\conversation.rs:132:8
+    |
+132 | pub fn update_image_context(image_base64: String) {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_timestamp` is never used
+   --> src\conversation.rs:141:4
+    |
+141 | fn get_timestamp() -> u64 {
+    |    ^^^^^^^^^^^^^
+
+warning: function `generate_conversation_id` is never used
+   --> src\conversation.rs:149:4
+    |
+149 | fn generate_conversation_id() -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `RGB` should have a snake case name
+   --> src\overlay\quick_actions.rs:325:4
+    |
+325 | fn RGB(r: u8, g: u8, b: u8) -> COLORREF {
+    |    ^^^ help: convert the identifier to snake case: `rgb`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: `xt-screen-translator` (bin "xt-screen-translator") generated 48 warnings (run `cargo fix --bin "xt-screen-translator" -p xt-screen-translator` to apply 21 suggestions)
+error: failed to remove file `F:\Github\screen-grounded-translator\target\release\xt-screen-translator.exe`
+
+Caused by:
+  Access is denied. (os error 5)

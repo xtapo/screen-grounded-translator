@@ -1,5 +1,5 @@
 // Live Captions Overlay Window
-// Displays real-time translated captions from Windows Live Captions
+// Displays real-time translated captions from Windows Live Captions or Gemini Live
 
 use crate::config::LiveCaptionsConfig;
 use crate::api::translate_text_streaming;
@@ -8,6 +8,8 @@ use crate::live_captions::{
     hide_live_captions, show_live_captions, LIVE_CAPTIONS_ACTIVE, 
     extract_latest_sentence,
 };
+use crate::gemini_live::GeminiLiveClient;
+use crate::audio_capture::AudioCapture;
 use crate::APP;
 
 use std::sync::{Arc, Mutex, atomic::Ordering};
@@ -19,6 +21,7 @@ use windows::Win32::Graphics::Dwm::*;
 use windows::Win32::System::LibraryLoader::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
 use windows::core::*;
+use windows::w;
 
 const OVERLAY_CLASS_NAME: &str = "LiveCaptionsOverlayWindow";
 const OVERLAY_WIDTH: i32 = 800;
@@ -84,8 +87,15 @@ pub fn is_live_captions_active() -> bool {
 
 /// Main thread for overlay window with proper message loop
 fn run_overlay_window_thread(config: LiveCaptionsConfig) -> anyhow::Result<()> {
-    // Launch Live Captions first
-    let lc_hwnd = launch_live_captions()?;
+    // Check mode
+    let use_gemini_live = config.translation_model == "gemini-2.0-flash-live";
+
+    // Launch Live Captions first ONLY if not using Gemini Live
+    let lc_hwnd = if !use_gemini_live {
+        launch_live_captions()?
+    } else {
+        HWND(0)
+    };
     
     // Create overlay window
     let overlay_hwnd = create_overlay_window()?;
@@ -106,65 +116,130 @@ fn run_overlay_window_thread(config: LiveCaptionsConfig) -> anyhow::Result<()> {
     };
     
     let target_lang = config.target_language.clone();
+    let audio_source = config.audio_source.clone();
     let show_original = config.show_original;
     let auto_hide = config.auto_hide_live_captions;
     
     // Start capture thread separately
     let overlay_hwnd_for_capture = overlay_hwnd;
-    std::thread::spawn(move || {
-        if let Err(e) = run_live_captions_loop(lc_hwnd, auto_hide, move |text| {
-            // Extract latest sentence
-            if let Some(sentence) = extract_latest_sentence(&text) {
-                if sentence.trim().is_empty() {
-                    return;
-                }
-                
-                log::info!("Live caption captured: {}", sentence);
-                
-                // Translate in a blocking way (TODO: could optimize with async)
-                let translated = match translate_text_streaming(
-                    &groq_key,
-                    &gemini_key,
-                    &openrouter_key,
-                    sentence.clone(),
-                    target_lang.clone(),
-                    model.clone(),
-                    "groq".to_string(),
-                    false,
-                    false,
-                    |_| {},
-                ) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        log::error!("Translation error: {}", e);
-                        format!("[Error: {}]", e)
-                    }
-                };
-                
-                // Add to caption lines
-                if let Ok(mut lines) = CAPTION_LINES.lock() {
-                    let max_lines = MAX_LINES.lock().map(|m| *m).unwrap_or(2);
+    
+    if use_gemini_live {
+        // --- GEMINI LIVE MODE ---
+        std::thread::spawn(move || {
+            crate::live_captions::LIVE_CAPTIONS_ACTIVE.store(true, Ordering::SeqCst);
+            crate::live_captions::LIVE_CAPTIONS_STOP_SIGNAL.store(false, Ordering::SeqCst);
+            
+            let mut audio_capture = AudioCapture::new();
+            
+            // Buffer for current accumulated sentence
+            let current_buffer = Arc::new(Mutex::new(String::new()));
+            let buffer_clone = current_buffer.clone();
+            
+            let on_text = move |text: String| {
+                if let Ok(mut buf) = buffer_clone.lock() {
+                    buf.push_str(&text);
+                    let display_text = buf.trim().to_string();
                     
-                    lines.push_back(CaptionLine {
-                        original: if show_original { sentence } else { String::new() },
-                        translated,
-                    });
-                    
-                    // Keep only max_lines
-                    while lines.len() > max_lines {
-                        lines.pop_front();
+                    if !display_text.is_empty() {
+                         if let Ok(mut lines) = CAPTION_LINES.lock() {
+                             if lines.is_empty() {
+                                 lines.push_back(CaptionLine {
+                                     original: String::new(),
+                                     translated: display_text,
+                                 });
+                             } else {
+                                 // Update last line
+                                 if let Some(last) = lines.back_mut() {
+                                     last.translated = display_text;
+                                 }
+                             }
+                         }
+                         
+                         unsafe {
+                             let _ = PostMessageW(overlay_hwnd_for_capture, WM_USER + 1, WPARAM(0), LPARAM(0));
+                         }
                     }
                 }
-                
-                // Trigger redraw via PostMessage (thread-safe)
-                unsafe {
-                    let _ = PostMessageW(overlay_hwnd_for_capture, WM_USER + 1, WPARAM(0), LPARAM(0));
-                }
+            };
+            
+            let system_instruction = format!("You are a simultaneous interpreter. Translate the incoming audio to {}. Output only the translated text. Do not output anything else.", target_lang);
+            log::info!("Starting Gemini Live with instruction: {}", system_instruction);
+            
+            match GeminiLiveClient::new(gemini_key, Some(system_instruction), Box::new(on_text)) {
+                Ok(client) => {
+                     if let Err(e) = audio_capture.start(audio_source, move |data| client.send_audio(data)) {
+                         log::error!("Audio capture failed: {}", e);
+                     } else {
+                         log::info!("Gemini Live audio streaming started");
+                         while !crate::live_captions::LIVE_CAPTIONS_STOP_SIGNAL.load(Ordering::SeqCst) {
+                             std::thread::sleep(std::time::Duration::from_millis(100));
+                         }
+                         audio_capture.stop();
+                     }
+                },
+                Err(e) => log::error!("Failed to initialize Gemini Live client: {}", e),
             }
-        }) {
-            log::error!("Live Captions capture loop error: {}", e);
-        }
-    });
+            
+            crate::live_captions::LIVE_CAPTIONS_ACTIVE.store(false, Ordering::SeqCst);
+        });
+        
+    } else {
+        // --- ORIGINAL LIVE CAPTIONS MODE ---
+        std::thread::spawn(move || {
+            if let Err(e) = run_live_captions_loop(lc_hwnd, auto_hide, move |text| {
+                // Extract latest sentence
+                if let Some(sentence) = extract_latest_sentence(&text) {
+                    if sentence.trim().is_empty() {
+                        return;
+                    }
+                    
+                    log::info!("Live caption captured: {}", sentence);
+                    
+                    // Translate in a blocking way
+                    let translated = match translate_text_streaming(
+                        &groq_key,
+                        &gemini_key,
+                        &openrouter_key,
+                        sentence.clone(),
+                        target_lang.clone(),
+                        model.clone(),
+                        "groq".to_string(), // Default provider for now, logic inside handles it
+                        false,
+                        false,
+                        |_| {},
+                    ) {
+                        Ok(t) => t,
+                        Err(e) => {
+                            log::error!("Translation error: {}", e);
+                            format!("[Error: {}]", e)
+                        }
+                    };
+                    
+                    // Add to caption lines
+                    if let Ok(mut lines) = CAPTION_LINES.lock() {
+                        let max_lines = MAX_LINES.lock().map(|m| *m).unwrap_or(2);
+                        
+                        lines.push_back(CaptionLine {
+                            original: if show_original { sentence } else { String::new() },
+                            translated,
+                        });
+                        
+                        // Keep only max_lines
+                        while lines.len() > max_lines {
+                            lines.pop_front();
+                        }
+                    }
+                    
+                    // Trigger redraw
+                    unsafe {
+                        let _ = PostMessageW(overlay_hwnd_for_capture, WM_USER + 1, WPARAM(0), LPARAM(0));
+                    }
+                }
+            }) {
+                log::error!("Live Captions capture loop error: {}", e);
+            }
+        });
+    }
     
     // Run message loop for overlay window
     unsafe {
@@ -190,6 +265,7 @@ fn create_overlay_window() -> anyhow::Result<HWND> {
     unsafe {
         let instance = GetModuleHandleW(None)?;
         
+        // Proper encoding for wide string
         let class_wide: Vec<u16> = OVERLAY_CLASS_NAME.encode_utf16().chain(std::iter::once(0)).collect();
         
         let wc = WNDCLASSW {

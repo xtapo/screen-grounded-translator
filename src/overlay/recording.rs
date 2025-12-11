@@ -107,6 +107,13 @@ pub fn show_recording_overlay(preset_idx: usize) {
                     AUDIO_ABORT_SIGNAL.clone(),
                     hwnd
                 );
+            } else if preset.model == "gemini-2.0-flash-live" {
+                crate::api::run_gemini_live_preset(
+                    preset,
+                    AUDIO_STOP_SIGNAL.clone(),
+                    AUDIO_ABORT_SIGNAL.clone(),
+                    hwnd
+                );
             } else {
                 crate::api::record_audio_and_transcribe(
                     preset, 

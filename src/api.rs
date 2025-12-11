@@ -212,7 +212,7 @@ where
         let mut resp_result = Err(anyhow::anyhow!("Request not started"));
         for retry in 0..3 {
             let r = UREQ_AGENT.post("https://openrouter.ai/api/v1/chat/completions")
-                .set("Authorization", &format!("Bearer {}", openrouter_api_key))
+                .set("Authorization", &format!("Bearer {}", openrouter_api_key.trim()))
                 .set("HTTP-Referer", "https://github.com/nhanh-vo/screen-grounded-translator")
                 .set("X-Title", "XT Screen Translator")
                 .send_json(payload.clone());
@@ -222,23 +222,31 @@ where
                     resp_result = Ok(res);
                     break;
                 }
-                Err(ureq::Error::Status(429, _)) => {
-                    log::warn!("OpenRouter 429 Rate Limit. Retrying...");
-                    if retry < 2 {
-                        std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
-                        continue;
+                Err(ureq::Error::Status(code, response)) => {
+                    let error_body = response.into_string().unwrap_or_else(|_| "Unknown error".to_string());
+                    log::error!("OpenRouter API Error (Status {}): {}", code, error_body);
+
+                    if code == 429 {
+                        log::warn!("OpenRouter 429 Rate Limit. Retrying...");
+                        if retry < 2 {
+                            std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
+                            continue;
+                        }
+                        resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). {}", error_body));
+                        break;
+                    } else if code == 401 {
+                        resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
+                        break;
+                    } else if code == 402 {
+                        resp_result = Err(anyhow::anyhow!("OpenRouter: Insufficient credits or not free."));
+                        break;
+                    } else {
+                        resp_result = Err(anyhow::anyhow!("OpenRouter API Error {}: {}", code, error_body));
+                        break;
                     }
-                    resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). Please try a different model or wait."));
                 }
                 Err(e) => {
-                    let err_str = e.to_string();
-                    if err_str.contains("401") {
-                         resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
-                    } else if err_str.contains("402") {
-                         resp_result = Err(anyhow::anyhow!("OpenRouter: Insufficient credits or not free."));
-                    } else {
-                         resp_result = Err(anyhow::anyhow!("OpenRouter API Error: {}", err_str));
-                    }
+                    resp_result = Err(anyhow::anyhow!("OpenRouter Connection Error: {}", e));
                     break;
                 }
             }
@@ -522,7 +530,7 @@ where
         let mut resp_result = Err(anyhow::anyhow!("Request not started"));
         for retry in 0..3 {            
             let r = UREQ_AGENT.post("https://openrouter.ai/api/v1/chat/completions")
-                .set("Authorization", &format!("Bearer {}", openrouter_api_key))
+                .set("Authorization", &format!("Bearer {}", openrouter_api_key.trim()))
                 .set("HTTP-Referer", "https://github.com/nhanh-vo/screen-grounded-translator")
                 .set("X-Title", "XT Screen Translator")
                 .send_json(payload.clone());
@@ -532,21 +540,31 @@ where
                      resp_result = Ok(res);
                      break;
                 }
-                Err(ureq::Error::Status(429, _)) => {
-                     log::warn!("OpenRouter 429 Rate Limit. Retrying...");
-                     if retry < 2 {
-                         std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
-                         continue;
+                Err(ureq::Error::Status(code, response)) => {
+                     let error_body = response.into_string().unwrap_or_else(|_| "Unknown error".to_string());
+                     log::error!("OpenRouter API Error (Status {}): {}", code, error_body);
+
+                     if code == 429 {
+                         log::warn!("OpenRouter 429 Rate Limit. Retrying...");
+                         if retry < 2 {
+                             std::thread::sleep(std::time::Duration::from_secs(2u64.pow(retry + 1)));
+                             continue;
+                         }
+                         resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). {}", error_body));
+                         break;
+                     } else if code == 401 {
+                         resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
+                         break;
+                     } else if code == 402 {
+                         resp_result = Err(anyhow::anyhow!("OpenRouter: Insufficient credits."));
+                         break;
+                     } else {
+                         resp_result = Err(anyhow::anyhow!("OpenRouter API Error {}: {}", code, error_body));
+                         break;
                      }
-                     resp_result = Err(anyhow::anyhow!("OpenRouter: Rate limit exceeded (429). Please try a different model or wait."));
                 }
                 Err(e) => {
-                    let err_str = e.to_string();
-                    if err_str.contains("401") {
-                        resp_result = Err(anyhow::anyhow!("INVALID_API_KEY"));
-                    } else {
-                        resp_result = Err(anyhow::anyhow!("OpenRouter API Error: {}", err_str));
-                    }
+                    resp_result = Err(anyhow::anyhow!("OpenRouter Connection Error: {}", e));
                     break;
                 }
             }
@@ -1393,4 +1411,140 @@ pub fn upload_audio_to_whisper(api_key: &str, model: &str, audio_data: Vec<u8>) 
         .ok_or_else(|| anyhow::anyhow!("No text in response"))?;
     
     Ok(text.to_string())
+}
+
+use crate::gemini_live::GeminiLiveClient;
+use crate::audio_capture::AudioCapture;
+use crate::config::AudioSource;
+
+pub fn run_gemini_live_preset(
+    preset: crate::config::Preset,
+    stop_signal: Arc<AtomicBool>,
+    abort_signal: Arc<AtomicBool>,
+    recording_hwnd: HWND,
+) {
+    // 1. Setup Result Window (UI Thread)
+    // We position it at bottom center of the screen
+    let screen_w = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    let screen_h = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    let width = 600;
+    let height = 150;
+    let dummy_rect = RECT { 
+        left: (screen_w - width) / 2, 
+        top: screen_h - height - 100, 
+        right: (screen_w + width) / 2, 
+        bottom: screen_h - 100 
+    };
+    
+    // Create window on THIS thread
+    let result_hwnd = crate::overlay::result::create_result_window(dummy_rect, crate::overlay::result::WindowType::Primary);
+    crate::overlay::result::update_window_text(result_hwnd, "Connecting to Gemini Live...");
+
+    let api_key = {
+        let app = APP.lock().unwrap();
+        app.config.gemini_api_key.clone()
+    };
+    
+    if api_key.is_empty() {
+        crate::overlay::result::update_window_text(result_hwnd, "Error: Missing Gemini API Key");
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        unsafe { 
+            PostMessageW(result_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)); 
+            if IsWindow(recording_hwnd).as_bool() {
+                PostMessageW(recording_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+            }
+        }
+        return;
+    }
+
+    // 2. Gemini Client Setup
+    let full_text = Arc::new(Mutex::new(String::new()));
+    let full_text_clone = full_text.clone();
+    let result_hwnd_clone = result_hwnd; // HWND is Copy
+    
+    let on_text = Box::new(move |text_chunk: String| {
+        if let Ok(mut history) = full_text_clone.lock() {
+            history.push_str(&text_chunk);
+            crate::overlay::result::update_window_text(result_hwnd_clone, &history);
+        }
+    });
+    
+    // System Instruction? (From preset prompt?)
+    // Preset prompt usually is "Transcribe this...". 
+    // We can use it as system instruction.
+    let system_instruction = if !preset.prompt.is_empty() { Some(preset.prompt.clone()) } else { None };
+
+    let mut client = match GeminiLiveClient::new(api_key, system_instruction, on_text) {
+        Ok(c) => c,
+        Err(e) => {
+             crate::overlay::result::update_window_text(result_hwnd, &format!("Connection Error: {}", e));
+             std::thread::sleep(std::time::Duration::from_secs(3));
+             unsafe { 
+                 PostMessageW(result_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+                 if IsWindow(recording_hwnd).as_bool() {
+                    PostMessageW(recording_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+                 }
+             }
+             return;
+        }
+    };
+    
+    // Connection happens in background thread in new()
+    
+    // 3. Audio Capture Setup
+    let mut audio_capture = AudioCapture::new();
+    let source = if preset.audio_source == "device" { AudioSource::SystemLoopback } else { AudioSource::Microphone };
+    
+    if let Err(e) = audio_capture.start(source, move |data| {
+        client.send_audio(data);
+    }) {
+        crate::overlay::result::update_window_text(result_hwnd, &format!("Audio Error: {}", e));
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        unsafe { 
+             PostMessageW(result_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+             if IsWindow(recording_hwnd).as_bool() {
+                PostMessageW(recording_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+             }
+        }
+        return;
+    }
+    
+    crate::overlay::result::update_window_text(result_hwnd, "Listening...");
+
+    // 4. Message Loop (Blocking until stop signal)
+    // We need to run message loop for the window we created.
+    // AND check stop signal.
+    
+    unsafe {
+        let mut msg = MSG::default();
+        loop {
+            // PeekMessage is better for polling stop signal
+            if PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+                if msg.message == WM_QUIT { break; }
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+            
+            if stop_signal.load(Ordering::SeqCst) || abort_signal.load(Ordering::SeqCst) {
+                 break;
+            }
+            
+            // Check if window closed by user
+            if !IsWindow(result_hwnd).as_bool() {
+                break;
+            }
+            
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        
+        // Cleanup RESULT OVERLAY
+         if IsWindow(result_hwnd).as_bool() {
+             PostMessageW(result_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+        }
+
+        // Cleanup RECORDING OVERLAY (if not already closed)
+         if IsWindow(recording_hwnd).as_bool() {
+             PostMessageW(recording_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+        }
+    }
 }

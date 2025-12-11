@@ -95,6 +95,16 @@ impl Default for Preset {
 }
 
 /// Configuration for Live Captions integration
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
+pub enum AudioSource {
+    Microphone,
+    SystemLoopback,
+}
+
+fn default_lc_audio_source() -> AudioSource {
+    AudioSource::Microphone
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LiveCaptionsConfig {
     pub enabled: bool,
@@ -103,6 +113,8 @@ pub struct LiveCaptionsConfig {
     pub overlay_sentences: usize,
     pub show_original: bool,
     pub auto_hide_live_captions: bool,
+    #[serde(default = "default_lc_audio_source")]
+    pub audio_source: AudioSource,
 }
 
 impl Default for LiveCaptionsConfig {
@@ -114,6 +126,7 @@ impl Default for LiveCaptionsConfig {
             overlay_sentences: 2,
             show_original: true,
             auto_hide_live_captions: true,
+            audio_source: AudioSource::Microphone,
         }
     }
 }
@@ -565,6 +578,35 @@ pub struct Config {
             show_quick_actions: false,
         };
 
+        // 11. Screenshot Preset
+        let screenshot_preset = Preset {
+            id: "preset_screenshot".to_string(),
+            name: "Screenshot".to_string(),
+            prompt: "".to_string(),
+            selected_language: "".to_string(),
+            language_vars: HashMap::new(),
+            model: "".to_string(), // No AI model needed
+            streaming_enabled: false,
+            auto_copy: true, // Copy to clipboard by default
+            hotkeys: vec![Hotkey { code: 83, name: "S".to_string(), modifiers: 0x0002 }], // Ctrl+S
+            retranslate: false,
+            retranslate_to: "".to_string(),
+            retranslate_model: "".to_string(),
+            retranslate_streaming_enabled: false,
+            retranslate_auto_copy: false,
+            hide_overlay: false,
+            preset_type: "screenshot".to_string(),
+            audio_source: "".to_string(),
+            hide_recording_ui: false,
+            video_capture_method: "region".to_string(),
+            is_upcoming: false,
+            live_mode: false,
+            skip_frames: false,
+            capture_interval_ms: 200,
+            enable_chat_mode: false,
+            show_quick_actions: false,
+        };
+
         Self {
             api_key: "".to_string(),
             gemini_api_key: "".to_string(),
@@ -572,7 +614,7 @@ pub struct Config {
             presets: vec![
                 trans_preset, trans_retrans_preset, ocr_preset, extract_retrans_preset, 
                 sum_preset, desc_preset, chat_preset, audio_preset, study_lang_preset, 
-                transcribe_retrans_preset, quicker_reply_preset, video_placeholder_preset
+                transcribe_retrans_preset, quicker_reply_preset, screenshot_preset, video_placeholder_preset
             ],
             active_preset_idx: 0,
             dark_mode: true,

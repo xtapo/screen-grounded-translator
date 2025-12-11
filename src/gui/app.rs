@@ -861,7 +861,7 @@ impl eframe::App for SettingsApp {
                                         ui.label(text.live_captions_model);
                                         let mut models_for_text: Vec<_> = get_all_models()
                                             .into_iter()
-                                            .filter(|m| m.enabled && m.model_type == crate::model_config::ModelType::Text)
+                                            .filter(|m| m.enabled && (m.model_type == crate::model_config::ModelType::Text || m.model_type == crate::model_config::ModelType::Audio))
                                             .collect();
                                         
                                         let current_model_display = get_model_by_id(&self.config.live_captions.translation_model)
@@ -884,6 +884,26 @@ impl eframe::App for SettingsApp {
                                             });
                                     });
                                     
+                                    // Audio Source
+                                    ui.horizontal(|ui| {
+                                        ui.label("Nguồn âm thanh:");
+                                        let current_source = self.config.live_captions.audio_source.clone();
+                                        egui::ComboBox::from_id_source("lc_audio_source")
+                                            .width(180.0)
+                                            .selected_text(match current_source {
+                                                crate::config::AudioSource::Microphone => "Microphone",
+                                                crate::config::AudioSource::SystemLoopback => "Âm thanh máy tính",
+                                            })
+                                            .show_ui(ui, |ui| {
+                                                if ui.selectable_value(&mut self.config.live_captions.audio_source, crate::config::AudioSource::Microphone, "Microphone").clicked() {
+                                                    self.save_and_sync();
+                                                }
+                                                if ui.selectable_value(&mut self.config.live_captions.audio_source, crate::config::AudioSource::SystemLoopback, "Âm thanh máy tính").clicked() {
+                                                    self.save_and_sync();
+                                                }
+                                            });
+                                    });
+
                                     // Overlay sentences
                                     ui.horizontal(|ui| {
                                         ui.label(text.live_captions_sentences);
@@ -1054,6 +1074,7 @@ impl eframe::App for SettingsApp {
 
                              let is_audio = preset.preset_type == "audio";
                              let is_video = preset.preset_type == "video";
+                             let is_screenshot = preset.preset_type == "screenshot";
 
                              // --- VIDEO PLACEHOLDER UI ---
                              if is_video {
@@ -1087,6 +1108,32 @@ impl eframe::App for SettingsApp {
                                      });
                                  });
                                  // Hide everything else for video placeholder
+                             } else if is_screenshot {
+                                 // --- SCREENSHOT PRESET UI ---
+                                 ui.group(|ui| {
+                                     ui.horizontal(|ui| {
+                                         draw_icon_static(ui, Icon::Image, None);
+                                         ui.label(egui::RichText::new("Chụp ảnh màn hình").strong());
+                                     });
+                                     
+                                     ui.add_space(5.0);
+                                     ui.colored_label(egui::Color32::from_rgb(100, 200, 100), 
+                                         match self.config.ui_language.as_str() {
+                                             "vi" => "📷 Chọn vùng màn hình → Lưu ảnh + Copy clipboard",
+                                             "ko" => "📷 화면 영역 선택 → 이미지 저장 + 클립보드 복사",
+                                             _ => "📷 Select region → Save image + Copy to clipboard"
+                                         }
+                                     );
+                                     ui.add_space(5.0);
+                                     ui.label(
+                                         match self.config.ui_language.as_str() {
+                                             "vi" => "Ảnh được lưu tại: Pictures/XT-Screen/Screenshots",
+                                             "ko" => "저장 위치: Pictures/XT-Screen/Screenshots",
+                                             _ => "Save location: Pictures/XT-Screen/Screenshots"
+                                         }
+                                     );
+                                 });
+                                 // Hide AI options for screenshot
                              } else {
                                  // STANDARD UI (Image/Audio)
                                  

@@ -31,12 +31,6 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
         return;
     }
 
-    let model_id = &preset.model;
-    let model_config = crate::model_config::get_model_by_id(model_id);
-    let model_config = model_config.expect("Model config not found for preset model");
-    let model_name = model_config.full_name.clone();
-    let provider = model_config.provider.clone();
-
     let x_virt = unsafe { GetSystemMetrics(SM_XVIRTUALSCREEN) };
     let y_virt = unsafe { GetSystemMetrics(SM_YVIRTUALSCREEN) };
     
@@ -50,8 +44,74 @@ pub fn process_and_close(app: Arc<Mutex<AppState>>, rect: RECT, overlay_hwnd: HW
     let crop_w = crop_w.min(img_w.saturating_sub(crop_x));
     let crop_h = crop_h.min(img_h.saturating_sub(crop_y));
 
+    // --- SCREENSHOT PRESET HANDLING (Before model lookup!) ---
+    if preset.preset_type == "screenshot" && crop_w > 0 && crop_h > 0 {
+        let cropped = img.view(crop_x, crop_y, crop_w, crop_h).to_image();
+        let ui_language = config.ui_language.clone();
+        
+        std::thread::spawn(move || {
+            // 1. Copy to clipboard
+            super::utils::copy_image_to_clipboard(&cropped);
+            
+            // 2. Save to file
+            let pictures_dir = dirs::picture_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+            let screenshots_dir = pictures_dir.join("XT-Screen").join("Screenshots");
+            let _ = std::fs::create_dir_all(&screenshots_dir);
+            
+            let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
+            let filename = format!("screenshot_{}.png", timestamp);
+            let filepath = screenshots_dir.join(&filename);
+            
+            let save_result = cropped.save(&filepath);
+            
+            // Store folder path for potential "Open Folder" action
+            let folder_path = screenshots_dir.clone();
+            
+            // 3. Show result window
+            let primary_hwnd = super::result::create_result_window(rect, super::result::WindowType::Primary);
+            unsafe { 
+                PostMessageW(overlay_hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+                ShowWindow(primary_hwnd, SW_SHOW); 
+            }
+            
+            let full_path = filepath.display().to_string();
+            let folder_display = folder_path.display().to_string();
+            let msg = if save_result.is_ok() {
+                match ui_language.as_str() {
+                    "vi" => format!("✅ Đã lưu:\n{}\n\n📋 Đã copy vào clipboard!\n\n📂 Thư mục:\n{}", full_path, folder_display),
+                    _ => format!("✅ Saved:\n{}\n\n📋 Copied to clipboard!\n\n📂 Folder:\n{}", full_path, folder_display),
+                }
+            } else {
+                match ui_language.as_str() {
+                    "vi" => "❌ Lỗi lưu ảnh!".to_string(),
+                    _ => "❌ Failed to save image!".to_string(),
+                }
+            };
+            super::result::update_window_text(primary_hwnd, &msg);
+            
+            // Message loop
+            unsafe {
+                let mut msg_struct = MSG::default();
+                while GetMessageW(&mut msg_struct, None, 0, 0).into() {
+                    TranslateMessage(&msg_struct);
+                    DispatchMessageW(&msg_struct);
+                    if !IsWindow(primary_hwnd).as_bool() { break; }
+                }
+            }
+        });
+        return;
+    }
+    // --- END SCREENSHOT HANDLING ---
+
     if crop_w > 0 && crop_h > 0 {
         log::info!("Processing region: {}x{} at ({}, {}). Preset: {}", crop_w, crop_h, crop_x, crop_y, preset.name);
+        
+        // Model lookup (only needed for AI presets)
+        let model_id = &preset.model;
+        let model_config = crate::model_config::get_model_by_id(model_id);
+        let model_config = model_config.expect("Model config not found for preset model");
+        let model_name = model_config.full_name.clone();
+        let provider = model_config.provider.clone();
         
         let cropped = img.view(crop_x, crop_y, crop_w, crop_h).to_image();
         
